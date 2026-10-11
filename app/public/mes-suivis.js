@@ -5,6 +5,8 @@ import { ERREURS_AJOUT, TYPES_PRODUIT } from "/suivis.js";
 import { poserTexte, texte } from "/textes.js";
 
 const ADRESSE_PRODUIT_STEAM = "https://store.steampowered.com/app/";
+// Texte d'un produit sans prix, selon la raison donnée par le serveur.
+const CLES_SANS_PRIX = { pasEncoreSorti: "suivis.pasEncoreSorti", gratuit: "suivis.gratuit" };
 
 let ongletActif = TYPES_PRODUIT[0];
 // Dernière réponse de GET /api/suivis.
@@ -22,8 +24,8 @@ function element(balise, { classe, texte: contenu } = {}) {
   return nouveau;
 }
 
-function elementPrix(prix) {
-  if (!prix) return element("span", { classe: "sans-prix", texte: texte("suivis.sansPrix") });
+function elementPrix({ prix, sansPrix }) {
+  if (!prix) return element("span", { classe: "sans-prix", texte: texte(CLES_SANS_PRIX[sansPrix] ?? "suivis.sansPrix") });
   const bloc = element("span", { classe: "prix" });
   bloc.append(element("strong", { texte: prix.actuel }));
   if (prix.reduction > 0) {
@@ -52,7 +54,7 @@ function elementProduit(produit) {
   const ligne = element("li", { classe: "suivi" });
   ligne.append(
     lienSteam(produit),
-    etatSuivis.prixDisponibles ? elementPrix(produit.prix) : "",
+    etatSuivis.prixDisponibles ? elementPrix(produit) : "",
     bouton("suivis.retirer", (retirer) => retirerProduit(produit, retirer)),
   );
   return ligne;

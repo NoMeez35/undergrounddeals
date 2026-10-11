@@ -4,8 +4,9 @@
 //   en une requête ; un produit sans prix dans le pays (gratuit, pas encore sorti,
 //   retiré de la vente ou bloqué dans ce pays) renvoie `data: []` ; un pays sans
 //   boutique (ex. AQ, KP) reçoit les prix en dollars américains ;
-// - IStoreBrowseService/GetItems donne le type, le nom et la gratuité de 100
-//   produits en une requête ; un AppID inconnu y a `success: 15` ;
+// - IStoreBrowseService/GetItems donne le type, le nom, la gratuité et la
+//   sortie (`release.is_coming_soon`) de 100 produits en une requête ; un AppID
+//   inconnu y a `success: 15` ; un jeu pas encore sorti peut être dit gratuit ;
 // - IWishlistService/GetWishlist renvoie `{ response: {} }` pour une liste de
 //   souhaits vide ou privée (la confidentialité « Détails des jeux » du profil).
 import { TYPE_STEAM, TYPES_PRODUIT } from "../../app/public/suivis.js";
@@ -15,8 +16,8 @@ const ADRESSE_GET_ITEMS = "https://api.steampowered.com/IStoreBrowseService/GetI
 const ADRESSE_GET_WISHLIST = "https://api.steampowered.com/IWishlistService/GetWishlist/v1/";
 // Produits demandés par paquets, pour garder des adresses de taille raisonnable.
 const TAILLE_PAQUET = 100;
-// Les prix sont gardés en cache 15 minutes par Cloudflare, pour ménager Steam.
-const CACHE_PRIX_SECONDES = 15 * 60;
+// Prix et fiches sont gardés en cache 15 minutes par Cloudflare, pour ménager Steam.
+const EN_CACHE = { cf: { cacheTtl: 15 * 60, cacheEverything: true } };
 
 export class SteamIndisponible extends Error {}
 
@@ -47,27 +48,38 @@ function typeProduit({ type, is_free }) {
 }
 
 // Fiches des produits vus depuis le pays donné : Map AppID demandé →
-// { appId, type, nom } (type null si le produit ne peut pas être suivi). Un
+// { appId, type, nom, pasEncoreSorti, gratuit } (type null si le produit ne
+// peut pas être suivi). Un
 // produit inconnu de Steam ou à la fiche incomplète est absent de la Map.
 // L'AppID de la fiche est celui de Steam, qui peut différer de celui demandé.
 // Lève SteamIndisponible si Steam ne répond pas.
 export async function lireFichesSteam(appIds, pays) {
   const reponses = await Promise.all(
     enPaquets(appIds).map((paquet) =>
-      lireJson(ADRESSE_GET_ITEMS, {
-        input_json: JSON.stringify({
-          ids: paquet.map((appid) => ({ appid })),
-          context: { language: "english", country_code: pays },
-          data_request: {},
-        }),
-      }),
+      lireJson(
+        ADRESSE_GET_ITEMS,
+        {
+          input_json: JSON.stringify({
+            ids: paquet.map((appid) => ({ appid })),
+            context: { language: "english", country_code: pays },
+            data_request: { include_release: true },
+          }),
+        },
+        EN_CACHE,
+      ),
     ),
   );
 
   const fiches = new Map();
   for (const fiche of reponses.flatMap((reponse) => reponse?.response?.store_items ?? [])) {
     if (fiche.success !== 1 || typeof fiche.name !== "string" || !fiche.name) continue;
-    fiches.set(fiche.id, { appId: fiche.appid || fiche.id, type: typeProduit(fiche), nom: fiche.name });
+    fiches.set(fiche.id, {
+      appId: fiche.appid || fiche.id,
+      type: typeProduit(fiche),
+      nom: fiche.name,
+      pasEncoreSorti: fiche.release?.is_coming_soon === true,
+      gratuit: fiche.is_free === true,
+    });
   }
   return fiches;
 }
@@ -90,7 +102,7 @@ export async function lirePrixSteam(appIds, pays) {
       lireJson(
         ADRESSE_APPDETAILS,
         { appids: paquet.join(","), cc: pays, filters: "price_overview" },
-        { cf: { cacheTtl: CACHE_PRIX_SECONDES, cacheEverything: true } },
+        EN_CACHE,
       ),
     ),
   );

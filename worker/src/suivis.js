@@ -43,6 +43,15 @@ export async function siSteamRepond(promesse, siPanne) {
   }
 }
 
+// Raison de l'absence de prix d'après la fiche Steam : "pasEncoreSorti",
+// "gratuit", ou null (pas en vente dans le pays, retiré de la vente, ou inconnue).
+// Un jeu pas encore sorti peut être dit gratuit : la sortie passe d'abord.
+function raisonSansPrix(fiche) {
+  if (fiche?.pasEncoreSorti) return "pasEncoreSorti";
+  if (fiche?.gratuit) return "gratuit";
+  return null;
+}
+
 function produitVersJson({ app_id, type, nom, retire_de_steam }) {
   return { appId: app_id, type, nom, retireDeSteam: retire_de_steam === 1 };
 }
@@ -79,6 +88,10 @@ export async function listerSuivis({ utilisateur, env }) {
           null,
         )
       : new Map();
+  // Pourquoi un produit n'a pas de prix : demandé à Steam pour ceux-là seulement.
+  const sansPrix = produits.filter((produit) => prix?.get(produit.app_id) === null).map((produit) => produit.app_id);
+  const fiches =
+    sansPrix.length > 0 ? await siSteamRepond(lireFichesSteam(sansPrix, utilisateur.pays), new Map()) : new Map();
 
   return json({
     limite: LIMITE_DE_SUIVI,
@@ -88,6 +101,7 @@ export async function listerSuivis({ utilisateur, env }) {
     produits: produits.map((produit) => ({
       ...produitVersJson(produit),
       prix: prix?.get(produit.app_id) ?? null,
+      sansPrix: raisonSansPrix(fiches.get(produit.app_id)),
     })),
     nonSuivis: nonSuivis.map((produit) => ({ ...produitVersJson(produit), ecarte: produit.ecarte === 1 })),
   });

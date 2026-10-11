@@ -17,6 +17,9 @@ const FICHES = {
   1250: { type: "dlc", name: "Skins gratuits", is_free: true },
   // Fiche incomplète : Steam répond sans nom.
   1300: { type: "game" },
+  // Sans prix : pas encore sorti (et dit gratuit, comme Steam le fait parfois), gratuit.
+  1500: { type: "game", name: "Jeu à venir", is_free: true, release: { is_coming_soon: true } },
+  570: { type: "game", name: "Dota 2", is_free: true },
   // Jamais ajoutés ailleurs : pour les ajouts simultanés.
   1400: { type: "game", name: "Half-Life" },
 };
@@ -224,13 +227,17 @@ describe("Mes suivis", () => {
     expect(steam.requetes.at(-1).searchParams.get("cc")).toBe("US");
   });
 
-  it("indique un produit sans prix dans le pays", async () => {
+  it("indique pourquoi un produit n'a pas de prix : pas encore sorti, gratuit, ou pas en vente dans le pays", async () => {
     const { cookie } = await connecterUtilisateur({ pays: "US" });
-    await ajouter(cookie, "378648");
+    for (const appId of ["378648", "570", "1500"]) await ajouter(cookie, appId);
 
     const { produits } = await lister(cookie);
 
-    expect(produits[0].prix).toBeNull();
+    expect(produits.map(({ appId, prix, sansPrix }) => ({ appId, prix, sansPrix }))).toEqual([
+      { appId: 1500, prix: null, sansPrix: "pasEncoreSorti" },
+      { appId: 570, prix: null, sansPrix: "gratuit" },
+      { appId: 378648, prix: null, sansPrix: null },
+    ]);
   });
 
   it("liste les produits sans prix si Steam ne répond pas", async () => {
