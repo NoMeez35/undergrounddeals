@@ -1,0 +1,27 @@
+// Textes de l'interface en français. Mêmes clés dans chaque langue ;
+// {nom} est remplacé par la valeur correspondante.
+export default {
+  chargement: "Chargement…",
+  serveurIndisponible: "Le serveur ne répond pas ({erreur}).",
+  "connexion.accroche": "Suivez les promos, plus bas historiques, sorties et démos de vos jeux Steam.",
+  "connexion.erreur": "La connexion via Steam a échoué. Réessayez.",
+  "connexion.bouton": "Se connecter via Steam",
+  "accueil.connecte": "Connecté en tant que",
+  "accueil.reglages": "Réglages",
+  deconnexion: "Se déconnecter",
+  "choix.titre": "Bienvenue !",
+  "choix.explication": "Vérifiez votre langue et votre pays. Vous pourrez les modifier plus tard dans les Réglages.",
+  "choix.confirmer": "Confirmer",
+  "reglages.titre": "Réglages",
+  "reglages.enregistrer": "Enregistrer",
+  "reglages.enregistres": "Réglages enregistrés.",
+  "reglages.erreur": "L'enregistrement a échoué. Réessayez.",
+  "reglages.retour": "Retour",
+  "champ.langue": "Langue",
+  "champ.pays": "Pays",
+  "champ.paysAide": "Le pays détermine la devise et les prix affichés.",
+  "champ.paysAChoisir": "Choisissez un pays",
+  "introuvable.titre": "Page introuvable",
+  "introuvable.texte": "Cette page n'existe pas.",
+  "introuvable.retour": "Retour à l'accueil",
+};

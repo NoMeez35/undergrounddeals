@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -10,18 +10,39 @@
   <body>
     <main>
       <h1>undergrounddeals</h1>
-      <p id="chargement">Chargement…</p>
+      <p id="chargement" data-texte="chargement"></p>
 
       <section id="ecran-connexion" hidden>
-        <p>Suivez les promos, plus bas historiques, sorties et démos de vos jeux Steam.</p>
-        <p id="erreur-connexion" class="erreur" hidden>La connexion via Steam a échoué. Réessayez.</p>
-        <a class="bouton" href="/api/auth/steam">Se connecter via Steam</a>
+        <p data-texte="connexion.accroche"></p>
+        <p id="erreur-connexion" class="erreur" data-texte="connexion.erreur" hidden></p>
+        <a class="bouton" href="/api/auth/steam" data-texte="connexion.bouton"></a>
       </section>
 
       <section id="ecran-accueil" hidden>
         <img id="avatar" alt="" width="96" height="96" hidden />
-        <p>Connecté en tant que <strong id="nom"></strong></p>
-        <button id="deconnexion" class="bouton secondaire" type="button">Se déconnecter</button>
+        <p><span data-texte="accueil.connecte"></span> <strong id="nom"></strong></p>
+        <a class="bouton" href="/reglages" data-texte="accueil.reglages"></a>
+        <button id="deconnexion" class="bouton secondaire" type="button" data-texte="deconnexion"></button>
+      </section>
+
+      <!-- Choix de la langue et du pays : à la première connexion, puis dans les Réglages. -->
+      <section id="ecran-preferences" hidden>
+        <h2 id="titre-preferences"></h2>
+        <p id="explication-choix" data-texte="choix.explication" hidden></p>
+        <form id="preferences">
+          <label>
+            <span data-texte="champ.langue"></span>
+            <select id="langue" name="langue" required></select>
+          </label>
+          <label>
+            <span data-texte="champ.pays"></span>
+            <select id="pays" name="pays" required></select>
+            <small data-texte="champ.paysAide"></small>
+          </label>
+          <button id="valider-preferences" class="bouton" type="submit"></button>
+        </form>
+        <p id="message-preferences" role="status" hidden></p>
+        <a id="retour-reglages" class="bouton secondaire" href="/" data-texte="reglages.retour" hidden></a>
       </section>
     </main>
   </body>

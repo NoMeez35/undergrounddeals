@@ -38,6 +38,10 @@ _Avoid_: Bundle
 Le pays Steam d'un utilisateur, qui détermine les prix et la devise qu'il voit.
 _Avoid_: Région, locale, marché
 
+**Langue**:
+La langue de l'interface choisie par un utilisateur (français ou anglais en v1).
+_Avoid_: Locale, traduction
+
 ### Prix et événements
 
 **Promo**:

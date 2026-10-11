@@ -12,7 +12,11 @@ let reponsesSteam;
 beforeEach(() => {
   reponsesSteam = {
     verification: "ns:http://specs.openid.net/auth/2.0\nis_valid:true\n",
-    profil: { response: { players: [{ personaname: "Gabe", avatarfull: "https://avatars.test/gabe.jpg" }] } },
+    profil: {
+      response: {
+        players: [{ personaname: "Gabe", avatarfull: "https://avatars.test/gabe.jpg", loccountrycode: "BE" }],
+      },
+    },
   };
   vi.stubGlobal(
     "fetch",
@@ -31,9 +35,13 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function appeler(chemin, { methode = "GET", cookies = [] } = {}) {
+function appeler(chemin, { methode = "GET", cookies = [], corps } = {}) {
   const entetes = cookies.length ? { Cookie: cookies.join("; ") } : {};
-  return worker.fetch(new Request(`${ORIGINE}${chemin}`, { method: methode, headers: entetes }), env);
+  return worker.fetch(new Request(`${ORIGINE}${chemin}`, { method: methode, headers: entetes, body: corps }), env);
+}
+
+function enregistrerReglages(cookieSession, reglages) {
+  return appeler("/api/reglages", { methode: "PUT", cookies: [cookieSession], corps: JSON.stringify(reglages) });
 }
 
 // « nom=valeur » de chaque cookie posé par la réponse.
@@ -135,7 +143,7 @@ describe("connexion via Steam", () => {
 });
 
 describe("GET /api/moi", () => {
-  it("renvoie le nom et l'avatar Steam de l'utilisateur connecté", async () => {
+  it("renvoie le profil Steam et, à la première connexion, ni pays ni langue", async () => {
     const { cookieSession } = await seConnecter();
 
     const reponse = await appeler("/api/moi", { cookies: [cookieSession] });
@@ -145,7 +153,19 @@ describe("GET /api/moi", () => {
       steamId: STEAM_ID,
       nom: "Gabe",
       avatar: "https://avatars.test/gabe.jpg",
+      pays: null,
+      langue: null,
+      paysProfil: "BE",
     });
+  });
+
+  it("ne propose pas de pays si le profil Steam n'en donne pas", async () => {
+    delete reponsesSteam.profil.response.players[0].loccountrycode;
+    const { cookieSession } = await seConnecter();
+
+    const reponse = await appeler("/api/moi", { cookies: [cookieSession] });
+
+    expect((await reponse.json()).paysProfil).toBeNull();
   });
 
   it("répond 401 sans session", async () => {
@@ -159,6 +179,52 @@ describe("GET /api/moi", () => {
     const falsifie = cookieSession.replace(STEAM_ID, "76561197960287931");
 
     const reponse = await appeler("/api/moi", { cookies: [falsifie] });
+
+    expect(reponse.status).toBe(401);
+  });
+});
+
+describe("PUT /api/reglages", () => {
+  it("enregistre le pays et la langue, que /api/moi renvoie ensuite", async () => {
+    const { cookieSession } = await seConnecter();
+
+    const reponse = await enregistrerReglages(cookieSession, { pays: "fr", langue: "fr" });
+    const moi = await (await appeler("/api/moi", { cookies: [cookieSession] })).json();
+
+    expect(reponse.status).toBe(204);
+    expect(moi).toMatchObject({ pays: "FR", langue: "fr" });
+  });
+
+  it("permet de changer de pays et de langue", async () => {
+    const { cookieSession } = await seConnecter();
+    await enregistrerReglages(cookieSession, { pays: "FR", langue: "fr" });
+
+    await enregistrerReglages(cookieSession, { pays: "US", langue: "en" });
+
+    const utilisateur = await env.DB.prepare("SELECT pays, langue FROM utilisateurs").first();
+    expect(utilisateur).toEqual({ pays: "US", langue: "en" });
+  });
+
+  it.each([
+    ["un pays inconnu", JSON.stringify({ pays: "ZZ", langue: "fr" })],
+    ["une langue non traduite", JSON.stringify({ pays: "FR", langue: "de" })],
+    ["un réglage manquant", JSON.stringify({ pays: "FR" })],
+    ["un corps qui n'est pas du JSON", "pays=FR"],
+  ])("refuse %s sans rien modifier", async (_cas, corps) => {
+    const { cookieSession } = await seConnecter();
+    await enregistrerReglages(cookieSession, { pays: "FR", langue: "fr" });
+
+    const reponse = await appeler("/api/reglages", { methode: "PUT", cookies: [cookieSession], corps });
+
+    expect(reponse.status).toBe(400);
+    const utilisateur = await env.DB.prepare("SELECT pays, langue FROM utilisateurs").first();
+    expect(utilisateur).toEqual({ pays: "FR", langue: "fr" });
+  });
+
+  it("répond 401 sans session", async () => {
+    const corps = JSON.stringify({ pays: "FR", langue: "fr" });
+
+    const reponse = await appeler("/api/reglages", { methode: "PUT", corps });
 
     expect(reponse.status).toBe(401);
   });

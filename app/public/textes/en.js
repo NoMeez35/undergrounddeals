@@ -1,0 +1,27 @@
+// Interface texts in English. Same keys in every language;
+// {name} is replaced by the matching value.
+export default {
+  chargement: "Loading…",
+  serveurIndisponible: "The server is not responding ({erreur}).",
+  "connexion.accroche": "Track sales, historical lows, releases and demos of your Steam games.",
+  "connexion.erreur": "Signing in through Steam failed. Please try again.",
+  "connexion.bouton": "Sign in through Steam",
+  "accueil.connecte": "Signed in as",
+  "accueil.reglages": "Settings",
+  deconnexion: "Sign out",
+  "choix.titre": "Welcome!",
+  "choix.explication": "Check your language and country. You can change them later in Settings.",
+  "choix.confirmer": "Confirm",
+  "reglages.titre": "Settings",
+  "reglages.enregistrer": "Save",
+  "reglages.enregistres": "Settings saved.",
+  "reglages.erreur": "Saving failed. Please try again.",
+  "reglages.retour": "Back",
+  "champ.langue": "Language",
+  "champ.pays": "Country",
+  "champ.paysAide": "Your country sets the currency and prices shown.",
+  "champ.paysAChoisir": "Choose a country",
+  "introuvable.titre": "Page not found",
+  "introuvable.texte": "This page does not exist.",
+  "introuvable.retour": "Back to home",
+};

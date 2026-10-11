@@ -32,10 +32,9 @@ section {
   gap: 12px;
 }
 
-section[hidden],
-img[hidden],
-p[hidden] {
-  display: none;
+/* Prioritaire sur les `display` ci-dessous (.bouton, section…). */
+[hidden] {
+  display: none !important;
 }
 
 #avatar {
@@ -63,4 +62,26 @@ p[hidden] {
 
 .erreur {
   color: #c0392b;
+}
+
+form {
+  display: grid;
+  gap: 16px;
+  justify-items: center;
+}
+
+label {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  width: min(320px, 100%);
+}
+
+select {
+  padding: 8px;
+  font: inherit;
+}
+
+small {
+  opacity: 0.75;
 }

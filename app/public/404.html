@@ -1,16 +1,24 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Page introuvable · undergrounddeals</title>
+    <title>undergrounddeals</title>
     <link rel="stylesheet" href="/style.css" />
+    <script type="module">
+      import { proposerLangue } from "/langues.js";
+      import { chargerLangue, texte } from "/traduction.js";
+
+      // Page servie sans passer par l'API : elle suit la langue du navigateur.
+      await chargerLangue(proposerLangue(navigator.languages));
+      document.title = `${texte("introuvable.titre")} · undergrounddeals`;
+    </script>
   </head>
   <body>
     <main>
-      <h1>Page introuvable</h1>
-      <p>Cette page n'existe pas.</p>
-      <a class="bouton" href="/">Retour à l'accueil</a>
+      <h1 data-texte="introuvable.titre"></h1>
+      <p data-texte="introuvable.texte"></p>
+      <a class="bouton" href="/" data-texte="introuvable.retour"></a>
     </main>
   </body>
 </html>
