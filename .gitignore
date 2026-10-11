@@ -4,3 +4,9 @@ futur/
 node_modules/
 .wrangler/
 worker/.secrets.json
+
+# Compétences d'agent installées localement (npx skills) : le lien de .claude/skills
+# contient un chemin propre à ce PC.
+.agents/
+.claude/skills/
+skills-lock.json
