@@ -4,13 +4,15 @@
 // - profil : réponse de GetPlayerSummaries ;
 // - fiches : AppID → { type: "game" | "dlc" | "music", name, is_free, appid } ;
 // - prix : pays → AppID → price_overview ;
-// - souhaits : SteamID → AppID dans l'ordre de priorité (absent : liste vide ou privée) ;
+// - souhaits : SteamID → AppID dans l'ordre de priorité (absent : liste vide ou
+//   privée), ou réponse brute de GetWishlist si ce n'est pas un tableau ;
 // - enPanne : Steam répond 503 à tout ;
 // - requetes : adresses appelées, dans l'ordre.
 import { vi } from "vitest";
+import { TYPE_STEAM } from "../../app/public/suivis.js";
 
-// Valeur du champ `type` de GetItems.
-const TYPES_GET_ITEMS = { game: 0, dlc: 4, music: 11 };
+// Valeur du champ `type` de GetItems ; 11 : bande-son.
+const TYPES_GET_ITEMS = { game: TYPE_STEAM.jeu, dlc: TYPE_STEAM.dlc, music: 11 };
 
 function reponseGetItems(url, fiches) {
   const { ids } = JSON.parse(url.searchParams.get("input_json"));
@@ -35,6 +37,7 @@ function reponseAppdetails(url, prix) {
 function reponseGetWishlist(url, souhaits) {
   const appIds = souhaits[url.searchParams.get("steamid")];
   if (!appIds) return { response: {} };
+  if (!Array.isArray(appIds)) return appIds;
   return { response: { items: appIds.map((appid, i) => ({ appid, priority: i + 1, date_added: 1_700_000_000 })) } };
 }
 

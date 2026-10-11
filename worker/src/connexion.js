@@ -1,10 +1,9 @@
 // Connexion via Steam (voir docs/adr/0001) et déconnexion.
-import { PAYS_PAR_DEFAUT } from "../../app/public/pays.js";
 import { CHEMIN_ACCUEIL, CHEMIN_CONNEXION, CHEMIN_CONNEXION_STEAM, ERREUR_CONNEXION_STEAM } from "../../app/public/chemins.js";
 import { enteteCookie, enteteCookieSupprime, lireCookie } from "./cookies.js";
 import { redirection, sansContenu } from "./reponses.js";
 import { cookieSessionSupprime, creerCookieSession } from "./session.js";
-import { synchroniserSouhaits } from "./souhaits.js";
+import { importerSouhaits } from "./souhaits.js";
 import { urlConnexionSteam, verifierRetourSteam } from "./steam-openid.js";
 
 export const CHEMIN_RETOUR_STEAM = `${CHEMIN_CONNEXION_STEAM}/retour`;
@@ -37,10 +36,8 @@ export async function terminerConnexion({ request, url, env }) {
   const { meta } = await env.DB.prepare("INSERT OR IGNORE INTO utilisateurs (steam_id) VALUES (?)").bind(steamId).run();
   if (meta.changes > 0) {
     // Première connexion : la liste de souhaits est importée tout de suite. Un
-    // échec n'empêche pas la connexion ; le passage planifié la reprendra.
-    await synchroniserSouhaits(env, steamId, PAYS_PAR_DEFAUT).catch((erreur) =>
-      console.error(`Import de la liste de souhaits de ${steamId} : ${erreur.message}`),
-    );
+    // échec n'empêche pas la connexion ; le passage planifié la reprendra le lendemain.
+    await importerSouhaits(env, steamId);
   }
   return redirection(CHEMIN_ACCUEIL, [etatSupprime, await creerCookieSession(steamId, env.SESSION_SECRET)]);
 }

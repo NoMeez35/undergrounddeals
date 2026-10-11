@@ -24,3 +24,12 @@ Blocked by: 05
   - Import à la première connexion, puis passage planifié toutes les 10 minutes : il synchronise 4 utilisateurs non lus depuis 24 h, soit 576 par jour avec l'offre gratuite (50 requêtes à la base et 50 appels externes par passage).
   - Échange : on retire un produit suivi, puis on clique « Suivre » sur un non suivi. Un produit retiré par l'utilisateur est « écarté » : la synchronisation ne le suit plus d'elle-même.
   - En attente du test manuel du porteur du projet.
+- 2026-10-11 : corrections après relecture.
+  - Le passage planifié ne se bloque plus sur une erreur inattendue : l'utilisateur concerné est reporté au lendemain et les autres passent.
+  - Une liste illisible est traitée comme vide ou privée, donc rien n'est retiré.
+  - Au plus 400 fiches demandées à Steam par synchronisation, soit 5 appels au plus ; les produits qui ne peuvent pas être suivis sont mémorisés (table `produits_ignores`).
+  - Un produit est enregistré sous l'AppID de la liste.
+  - L'étiquette d'un non suivi donne la vraie raison : écarté, retiré de Steam, limite atteinte, ou place libre.
+  - Les packs n'apparaissent jamais : une liste de souhaits Steam ne contient que des AppID.
+  - Liste vidée : Steam répond comme pour une liste privée, compteur `GetWishlistItemCount` compris. Piste non vérifiée : `IPlayerService/GetOwnedGames` (avec la clé) indique si les détails des jeux, dont dépend la liste, sont publics. Comportement gardé : ne rien retirer.
+  - Risque accepté : entre « Retirer » et « Suivre », la synchronisation peut occuper la place libérée ; le clic répond alors « limite atteinte », avec l'invitation à libérer une place.

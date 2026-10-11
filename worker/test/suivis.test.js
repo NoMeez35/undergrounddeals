@@ -14,7 +14,7 @@ const FICHES = {
   // Jamais ajouté ailleurs : sa fiche n'est connue que de Steam.
   730: { type: "game", name: "Counter-Strike 2" },
   // DLC gratuit : un DLC suivi est payant.
-  1250: { type: "dlc", name: "Pack de skins gratuit", is_free: true },
+  1250: { type: "dlc", name: "Skins gratuits", is_free: true },
   // Fiche incomplète : Steam répond sans nom.
   1300: { type: "game" },
   // Jamais ajoutés ailleurs : pour les ajouts simultanés.

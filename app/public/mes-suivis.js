@@ -58,12 +58,26 @@ function elementProduit(produit) {
   return ligne;
 }
 
+// Places prises dans la limite de suivi pour ce type : comme côté serveur, les
+// produits retirés de Steam ne comptent pas.
+function placesPrises(type) {
+  return etatSuivis.produits.filter((produit) => produit.type === type && !produit.retireDeSteam).length;
+}
+
+// Pourquoi un produit de la liste de souhaits n'est pas suivi.
+function cleRaisonNonSuivi(produit) {
+  if (produit.ecarte) return "souhaits.ecarte";
+  if (produit.retireDeSteam) return "souhaits.retireDeSteam";
+  if (placesPrises(produit.type) >= etatSuivis.limite) return "souhaits.limiteAtteinte";
+  return "souhaits.nonSuivi";
+}
+
 // Produit de la liste de souhaits resté non suivi.
 function elementNonSuivi(produit) {
   const ligne = element("li", { classe: "suivi" });
   ligne.append(
     lienSteam(produit),
-    element("span", { classe: "note", texte: texte(produit.ecarte ? "souhaits.ecarte" : "souhaits.limiteAtteinte") }),
+    element("span", { classe: "note", texte: texte(cleRaisonNonSuivi(produit)) }),
     bouton("souhaits.suivre", (suivre) => suivreSouhait(produit, suivre)),
   );
   return ligne;
@@ -71,9 +85,7 @@ function elementNonSuivi(produit) {
 
 function afficherListe() {
   for (const type of TYPES_PRODUIT) {
-    // Comme pour la limite côté serveur, les produits retirés de Steam ne comptent pas.
-    const nombre = etatSuivis.produits.filter((produit) => produit.type === type && !produit.retireDeSteam).length;
-    elementParId(`compte-${type}`).textContent = `${nombre} / ${etatSuivis.limite}`;
+    elementParId(`compte-${type}`).textContent = `${placesPrises(type)} / ${etatSuivis.limite}`;
     elementParId(`onglet-${type}`).setAttribute("aria-selected", String(type === ongletActif));
   }
   elementParId("prix-indisponibles").hidden = etatSuivis.prixDisponibles;

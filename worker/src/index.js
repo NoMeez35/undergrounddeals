@@ -8,10 +8,9 @@ import { relireSouhaits, suivreSouhait, synchroniserLesListesEnRetard } from "./
 import { ajouterSuivi, listerSuivis, retirerSuivi } from "./suivis.js";
 import { renvoyerProfil, utilisateurConnecte } from "./utilisateur.js";
 
-// Routes d'un produit : `:appId` est l'AppID lu par CHEMIN_PRODUIT.
-const ROUTE_SUIVI = "/api/suivis/:appId";
-const ROUTE_SOUHAIT = "/api/souhaits/:appId";
-const CHEMIN_PRODUIT = /^\/api\/(suivis|souhaits)\/(\d{1,10})$/;
+// Routes d'un produit, « /api/<collection>/<AppID> » : collection → route.
+const ROUTES_PRODUIT = { suivis: "/api/suivis/:appId", souhaits: "/api/souhaits/:appId" };
+const CHEMIN_PRODUIT = new RegExp(`^/api/(${Object.keys(ROUTES_PRODUIT).join("|")})/(\\d{1,10})$`);
 
 // Routes ouvertes à tous.
 const ROUTES_PUBLIQUES = {
@@ -26,17 +25,16 @@ const ROUTES_CONNECTEES = {
   "PUT /api/reglages": enregistrerReglages,
   "GET /api/suivis": listerSuivis,
   "POST /api/suivis": ajouterSuivi,
-  [`DELETE ${ROUTE_SUIVI}`]: retirerSuivi,
+  [`DELETE ${ROUTES_PRODUIT.suivis}`]: retirerSuivi,
   "POST /api/souhaits/relire": relireSouhaits,
-  [`POST ${ROUTE_SOUHAIT}`]: suivreSouhait,
+  [`POST ${ROUTES_PRODUIT.souhaits}`]: suivreSouhait,
 };
 
 // Clé de route de la requête, et l'AppID quand le chemin en contient un.
 function lireRoute(request, url) {
   const produit = url.pathname.match(CHEMIN_PRODUIT);
   if (!produit) return { route: `${request.method} ${url.pathname}` };
-  const route = produit[1] === "suivis" ? ROUTE_SUIVI : ROUTE_SOUHAIT;
-  return { route: `${request.method} ${route}`, appId: Number(produit[2]) };
+  return { route: `${request.method} ${ROUTES_PRODUIT[produit[1]]}`, appId: Number(produit[2]) };
 }
 
 export default {

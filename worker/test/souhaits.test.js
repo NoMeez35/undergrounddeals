@@ -16,8 +16,10 @@ const FICHES = {
   378648: { type: "dlc", name: "The Witcher 3: Wild Hunt - Blood and Wine" },
   378649: { type: "dlc", name: "The Witcher 3: Wild Hunt - Hearts of Stone" },
   323180: { type: "music", name: "Portal 2 Soundtrack" },
-  1250: { type: "dlc", name: "Pack de skins gratuit", is_free: true },
-  ...Object.fromEntries(jeuxFactices(202).map((appId) => [appId, { type: "game", name: `Jeu ${appId}` }])),
+  1250: { type: "dlc", name: "Skins gratuits", is_free: true },
+  // Ancien AppID de la liste, que Steam redirige vers un autre.
+  400: { type: "game", name: "Portal", appid: 401 },
+  ...Object.fromEntries(jeuxFactices(450).map((appId) => [appId, { type: "game", name: `Jeu ${appId}` }])),
 };
 
 let steam;
@@ -29,6 +31,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 async function synchroniser({ steamId }, appIds) {
@@ -58,7 +61,8 @@ describe("synchronisation de la liste de souhaits", () => {
     ]);
   });
 
-  it("ignore les packs, les bandes-son, les DLC gratuits et les produits inconnus", async () => {
+  // Les packs n'y figurent jamais : une liste de souhaits Steam ne contient que des AppID.
+  it("ignore les bandes-son, les DLC gratuits et les produits inconnus", async () => {
     const utilisateur = await connecterUtilisateur();
 
     await synchroniser(utilisateur, [323180, 620, 1250, 999999]);
@@ -99,6 +103,49 @@ describe("synchronisation de la liste de souhaits", () => {
     const { produits, nonSuivis } = await lister(utilisateur);
     expect(appIdsDe(produits)).toEqual([730]);
     expect(nonSuivis).toMatchObject([{ appId: 620, ecarte: true }]);
+  });
+
+  it("suit un produit sous l'AppID de la liste, même si Steam en indique un autre", async () => {
+    const utilisateur = await connecterUtilisateur();
+
+    await synchroniser(utilisateur, [400]);
+
+    expect(appIdsDe((await lister(utilisateur)).produits)).toEqual([400]);
+  });
+
+  it("ne retire rien si Steam renvoie une liste illisible", async () => {
+    const utilisateur = await connecterUtilisateur();
+    await synchroniser(utilisateur, [620]);
+
+    await synchroniser(utilisateur, { response: { items: [{ appid: "620" }, { priority: 1 }] } });
+
+    expect(appIdsDe((await lister(utilisateur)).produits)).toEqual([620]);
+  });
+
+  it("ne redemande pas à Steam les produits qui ne peuvent pas être suivis", async () => {
+    const utilisateur = await connecterUtilisateur();
+    await synchroniser(utilisateur, [323180, 1250]);
+    steam.requetes = [];
+
+    await synchroniser(utilisateur, [323180, 1250]);
+
+    expect(steam.requetes.map((url) => url.pathname)).toEqual(["/IWishlistService/GetWishlist/v1/"]);
+  });
+
+  it("demande au plus 400 fiches à Steam par synchronisation, le reste à la suivante", async () => {
+    const utilisateur = await connecterUtilisateur();
+    const liste = jeuxFactices(450).map((appId) => appId + 1_000_000);
+    steam.fiches = { ...FICHES, ...Object.fromEntries(liste.map((appId) => [appId, { type: "game", name: `Jeu ${appId}` }])) };
+
+    await synchroniser(utilisateur, liste);
+    const premieresFiches = steam.requetes.filter((url) => url.pathname.includes("GetItems")).length;
+    steam.requetes = [];
+    await synchroniser(utilisateur, liste);
+
+    expect(premieresFiches).toBe(4);
+    expect(steam.requetes.filter((url) => url.pathname.includes("GetItems"))).toHaveLength(1);
+    const { nonSuivis } = await lister(utilisateur);
+    expect(nonSuivis).toHaveLength(250);
   });
 });
 
@@ -189,6 +236,28 @@ describe("passage planifié", () => {
     await passagePlanifie();
 
     expect(appIdsDe((await lister(utilisateur)).produits)).toEqual([620]);
+  });
+
+  it("passe à l'utilisateur suivant après une erreur inattendue", async () => {
+    const enEchec = await connecterUtilisateur();
+    const suivant = await connecterUtilisateur();
+    await seulEnRetard(enEchec);
+    await env.DB.prepare("UPDATE utilisateurs SET souhaits_lus_le = ? WHERE steam_id = ?")
+      .bind(new Date(Date.now() - 24.5 * 60 * 60 * 1000).toISOString(), suivant.steamId)
+      .run();
+    steam.souhaits[enEchec.steamId] = [620];
+    steam.souhaits[suivant.steamId] = [730];
+    const batch = env.DB.batch.bind(env.DB);
+    vi.spyOn(env.DB, "batch").mockImplementationOnce(() => Promise.reject(new Error("panne de la base")));
+    vi.spyOn(env.DB, "batch").mockImplementation(batch);
+
+    await passagePlanifie();
+
+    expect(appIdsDe((await lister(suivant)).produits)).toEqual([730]);
+    const { souhaits_lus_le } = await env.DB.prepare("SELECT souhaits_lus_le FROM utilisateurs WHERE steam_id = ?")
+      .bind(enEchec.steamId)
+      .first();
+    expect(Date.now() - Date.parse(souhaits_lus_le)).toBeLessThan(60 * 1000);
   });
 
   it("reporte au lendemain un utilisateur quand Steam ne répond pas", async () => {

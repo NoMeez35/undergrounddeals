@@ -1,4 +1,5 @@
 // Utilisateur connecté et son profil.
+import { PAYS_PAR_DEFAUT } from "../../app/public/pays.js";
 import { json } from "./reponses.js";
 import { creerCookieSession, lireSession } from "./session.js";
 import { lireProfilSteam } from "./steam-profil.js";
@@ -10,6 +11,12 @@ export async function utilisateurConnecte(request, env) {
   return env.DB.prepare("SELECT * FROM utilisateurs WHERE steam_id = ?")
     .bind(steamId)
     .first();
+}
+
+// Pays de l'utilisateur (une ligne de la table utilisateurs), ou celui par
+// défaut tant qu'il n'a pas choisi le sien.
+export function paysDe(utilisateur) {
+  return utilisateur.pays ?? PAYS_PAR_DEFAUT;
 }
 
 // `pays` et `langue` restent null tant que l'utilisateur ne les a pas confirmés ;

@@ -65,9 +65,9 @@ export async function lireFichesSteam(appIds, pays) {
   );
 
   const fiches = new Map();
-  for (const article of reponses.flatMap((reponse) => reponse?.response?.store_items ?? [])) {
-    if (article.success !== 1 || typeof article.name !== "string" || !article.name) continue;
-    fiches.set(article.id, { appId: article.appid || article.id, type: typeProduit(article), nom: article.name });
+  for (const fiche of reponses.flatMap((reponse) => reponse?.response?.store_items ?? [])) {
+    if (fiche.success !== 1 || typeof fiche.name !== "string" || !fiche.name) continue;
+    fiches.set(fiche.id, { appId: fiche.appid || fiche.id, type: typeProduit(fiche), nom: fiche.name });
   }
   return fiches;
 }
@@ -106,16 +106,17 @@ export async function lirePrixSteam(appIds, pays) {
 
 // Liste de souhaits de l'utilisateur, dans l'ordre de priorité Steam : les
 // produits classés (priorité 1, 2…) puis les non classés (priorité 0), du plus
-// ancien au plus récent. Renvoie une liste d'AppID, ou null si la liste est vide
-// ou privée. Lève SteamIndisponible si Steam ne répond pas.
+// ancien au plus récent. Renvoie une liste d'AppID, ou null si la liste est vide,
+// privée ou illisible : dans le doute, la synchronisation ne retire rien.
+// Lève SteamIndisponible si Steam ne répond pas.
 export async function lireListeDeSouhaits(steamId) {
   const reponse = await lireJson(ADRESSE_GET_WISHLIST, { steamid: steamId });
-  const articles = reponse?.response?.items;
-  if (!Array.isArray(articles) || articles.length === 0) return null;
+  const items = reponse?.response?.items;
+  const souhaits = (Array.isArray(items) ? items : []).filter((souhait) => Number.isInteger(souhait?.appid));
+  if (souhaits.length === 0) return null;
 
   const rang = ({ priority }) => (priority > 0 ? priority : Infinity);
-  return articles
-    .filter((article) => Number.isInteger(article?.appid))
-    .sort((a, b) => rang(a) - rang(b) || a.date_added - b.date_added)
-    .map((article) => article.appid);
+  return souhaits
+    .sort((a, b) => rang(a) - rang(b) || (a.date_added ?? 0) - (b.date_added ?? 0))
+    .map((souhait) => souhait.appid);
 }

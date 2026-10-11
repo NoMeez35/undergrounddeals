@@ -4,6 +4,8 @@ Application qui surveille les jeux et DLC Steam qui intéressent un utilisateur 
 
 ## Language
 
+Les termes à éviter (_Avoid_) valent pour le code et pour l'interface en français. L'interface en anglais reprend les mots que Steam emploie en anglais (« wishlist »…).
+
 ### Utilisateurs et produits suivis
 
 **Utilisateur**:
@@ -28,7 +30,11 @@ _Avoid_: Quota, plafond
 
 **Liste de souhaits**:
 La liste de souhaits Steam de l'utilisateur, une des sources possibles de produits suivis.
-_Avoid_: Wishlist (dans le code comme dans l'interface, préférer ce terme)
+_Avoid_: Wishlist
+
+**Produit écarté**:
+Produit de la liste de souhaits que l'utilisateur a retiré de ses produits suivis ; la synchronisation ne le suit plus d'elle-même, mais il peut le suivre à nouveau.
+_Avoid_: Ignoré, masqué, rejeté
 
 **Pack**:
 Lot de plusieurs produits Steam vendus ensemble ; ne peut pas être suivi.

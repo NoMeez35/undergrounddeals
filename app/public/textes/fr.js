@@ -40,6 +40,8 @@ export default {
   "souhaits.nonSuivis": "Dans votre liste de souhaits, non suivis",
   "souhaits.limiteAtteinte": "Non suivi (limite atteinte)",
   "souhaits.ecarte": "Retiré de vos suivis",
+  "souhaits.retireDeSteam": "Retiré de Steam",
+  "souhaits.nonSuivi": "Non suivi : une place est libre",
   "souhaits.suivre": "Suivre",
   "choix.titre": "Bienvenue !",
   "choix.explication": "Vérifiez votre langue et votre pays. Vous pourrez les modifier plus tard dans les Réglages.",

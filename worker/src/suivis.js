@@ -1,11 +1,22 @@
 // Produits suivis d'un utilisateur : liste avec prix, ajout manuel, retrait.
-import { PAYS_PAR_DEFAUT } from "../../app/public/pays.js";
 import { ERREURS_AJOUT, LIMITE_DE_SUIVI } from "../../app/public/suivis.js";
 import { json, sansContenu } from "./reponses.js";
 import { lireSaisieProduit } from "./saisie-produit.js";
 import { lireFichesSteam, lirePrixSteam, SteamIndisponible } from "./steam-boutique.js";
+import { paysDe } from "./utilisateur.js";
 
 export const COLONNES_PRODUIT = "p.app_id, p.type, p.nom, p.retire_de_steam";
+
+// Morceaux de SQL partagés avec souhaits.js ; ?1 y est toujours le SteamID.
+// Nombre de produits du type donné qui comptent dans la limite de suivi.
+export const sqlPlacesPrises = (type) =>
+  `(SELECT COUNT(*) FROM suivis s JOIN produits p ON p.app_id = s.app_id
+     WHERE s.steam_id = ?1 AND p.type = ${type} AND p.retire_de_steam = 0)`;
+// Le produit `sh.app_id` de la liste de souhaits (alias sh) n'est pas suivi.
+export const SQL_SOUHAIT_NON_SUIVI = "NOT EXISTS (SELECT 1 FROM suivis s WHERE s.steam_id = ?1 AND s.app_id = sh.app_id)";
+
+// Provenance d'un produit suivi : chacune est une colonne de la table suivis.
+export const PROVENANCES = { manuel: "manuel", souhait: "souhait" };
 
 // Statut HTTP de chaque refus d'ajout.
 const STATUT_REFUS = {
@@ -46,16 +57,15 @@ export async function listerSuivis({ utilisateur, env }) {
       `SELECT ${COLONNES_PRODUIT}
          FROM suivis s
          JOIN produits p ON p.app_id = s.app_id
-         LEFT JOIN souhaits w ON w.steam_id = s.steam_id AND w.app_id = s.app_id
+         LEFT JOIN souhaits sh ON sh.steam_id = s.steam_id AND sh.app_id = s.app_id
         WHERE s.steam_id = ?
-        ORDER BY s.ajoute_le DESC, w.rang, p.nom`,
+        ORDER BY s.ajoute_le DESC, sh.rang, p.nom`,
     ).bind(utilisateur.steam_id),
     env.DB.prepare(
-      `SELECT ${COLONNES_PRODUIT}, w.ecarte
-         FROM souhaits w JOIN produits p ON p.app_id = w.app_id
-        WHERE w.steam_id = ?1
-          AND NOT EXISTS (SELECT 1 FROM suivis s WHERE s.steam_id = ?1 AND s.app_id = w.app_id)
-        ORDER BY w.rang`,
+      `SELECT ${COLONNES_PRODUIT}, sh.ecarte
+         FROM souhaits sh JOIN produits p ON p.app_id = sh.app_id
+        WHERE sh.steam_id = ?1 AND ${SQL_SOUHAIT_NON_SUIVI}
+        ORDER BY sh.rang`,
     ).bind(utilisateur.steam_id),
   ]);
 
@@ -114,24 +124,29 @@ async function noterProvenance(env, steamId, appId, provenance) {
 }
 
 // Suit le produit pour l'utilisateur, dans la limite de suivi, en notant sa
-// provenance : "manuel" (ajout manuel) ou "souhait" (liste de souhaits).
-// Répond 201 si le produit est ajouté, 200 avec `dejaSuivi` s'il l'était déjà,
-// ou 409 si la limite est atteinte.
+// provenance (une valeur de PROVENANCES). Répond 201 si le produit est ajouté,
+// 200 avec `dejaSuivi` s'il l'était déjà, ou 409 si la limite est atteinte.
 export async function suivre(env, steamId, produit, provenance) {
+  if (!Object.hasOwn(PROVENANCES, provenance)) throw new Error(`Provenance inconnue : ${provenance}`);
   const reponse = (dejaSuivi) => json({ produit: produitVersJson(produit), dejaSuivi }, { status: dejaSuivi ? 200 : 201 });
   if (await noterProvenance(env, steamId, produit.app_id, provenance)) return reponse(true);
 
   // L'ajout et la vérification de la limite se font en une seule requête, pour
-  // que deux ajouts simultanés ne puissent pas la dépasser.
+  // que deux ajouts simultanés ne puissent pas la dépasser. Un produit de la
+  // liste de souhaits garde aussi cette provenance.
   const { meta } = await env.DB.prepare(
     `INSERT OR IGNORE INTO suivis (steam_id, app_id, ajoute_le, manuel, souhait)
-     SELECT ?1, ?2, ?3, ?6 = 'manuel',
-            EXISTS (SELECT 1 FROM souhaits WHERE steam_id = ?1 AND app_id = ?2)
-      WHERE (SELECT COUNT(*)
-               FROM suivis s JOIN produits p ON p.app_id = s.app_id
-              WHERE s.steam_id = ?1 AND p.type = ?4 AND p.retire_de_steam = 0) < ?5`,
+     SELECT ?1, ?2, ?3, ?5, EXISTS (SELECT 1 FROM souhaits WHERE steam_id = ?1 AND app_id = ?2)
+      WHERE ${sqlPlacesPrises("?4")} < ?6`,
   )
-    .bind(steamId, produit.app_id, new Date().toISOString(), produit.type, LIMITE_DE_SUIVI, provenance)
+    .bind(
+      steamId,
+      produit.app_id,
+      new Date().toISOString(),
+      produit.type,
+      provenance === PROVENANCES.manuel ? 1 : 0,
+      LIMITE_DE_SUIVI,
+    )
     .run();
   if (meta.changes === 0) {
     // Rien d'inséré : soit la limite est atteinte, soit un ajout simultané du
@@ -154,9 +169,9 @@ export async function ajouterSuivi({ request, utilisateur, env }) {
   if (!saisie) return refus(ERREURS_AJOUT.lienInvalide);
   if (saisie.pack) return refus(ERREURS_AJOUT.pack);
 
-  const { produit, erreur } = await trouverProduit(env, saisie.appId, utilisateur.pays ?? PAYS_PAR_DEFAUT);
+  const { produit, erreur } = await trouverProduit(env, saisie.appId, paysDe(utilisateur));
   if (erreur) return refus(erreur);
-  return suivre(env, utilisateur.steam_id, produit, "manuel");
+  return suivre(env, utilisateur.steam_id, produit, PROVENANCES.manuel);
 }
 
 // Un produit retiré qui est dans la liste de souhaits y reste, écarté : la

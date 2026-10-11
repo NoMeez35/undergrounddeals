@@ -40,6 +40,8 @@ export default {
   "souhaits.nonSuivis": "In your wishlist, not tracked",
   "souhaits.limiteAtteinte": "Not tracked (limit reached)",
   "souhaits.ecarte": "Removed from your tracked products",
+  "souhaits.retireDeSteam": "Removed from Steam",
+  "souhaits.nonSuivi": "Not tracked: a slot is free",
   "souhaits.suivre": "Track",
   "choix.titre": "Welcome!",
   "choix.explication": "Check your language and country. You can change them later in Settings.",
