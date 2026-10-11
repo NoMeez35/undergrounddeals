@@ -1,6 +1,6 @@
 # Squelette de l'appli déployé de bout en bout
 
-Status: ready-for-agent
+Status: claimed
 Blocked by: 01
 
 ## Quoi

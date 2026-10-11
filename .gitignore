@@ -1,2 +1,5 @@
 # Versions futures : dépôt privé séparé (undergrounddeals-futur)
 futur/
+
+node_modules/
+.wrangler/
