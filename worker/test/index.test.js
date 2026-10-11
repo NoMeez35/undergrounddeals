@@ -168,6 +168,14 @@ describe("GET /api/moi", () => {
     expect((await reponse.json()).paysProfil).toBeNull();
   });
 
+  it("prolonge la session de 30 jours à chaque visite", async () => {
+    const { cookieSession } = await seConnecter();
+
+    const reponse = await appeler("/api/moi", { cookies: [cookieSession] });
+
+    expect(reponse.headers.get("Set-Cookie")).toMatch(/^ud_session=.+; .*Max-Age=2592000/);
+  });
+
   it("répond 401 sans session", async () => {
     const reponse = await appeler("/api/moi");
 

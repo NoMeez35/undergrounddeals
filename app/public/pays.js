@@ -1,6 +1,7 @@
-// Partagé par l'appli et le Worker. Pays : codes ISO 3166-1 alpha-2, ceux que
-// Steam utilise pour les profils et les prix (paramètre `cc`). Les noms sont
-// fournis par le navigateur dans la langue de l'interface (Intl.DisplayNames).
+// Partagé par l'appli et le Worker. Pays : les codes de la liste des pays des
+// profils Steam (https://steamcommunity.com/actions/QueryLocations/, relevée le
+// 2026-10-11) : tous les codes ISO 3166-1 alpha-2, plus XK (Kosovo). Les noms
+// sont fournis par le navigateur dans la langue de l'interface (Intl.DisplayNames).
 export const PAYS = `
   AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ
   BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ
@@ -25,6 +26,7 @@ export const PAYS = `
   UA UG UM US UY UZ
   VA VC VE VG VI VN VU
   WF WS
+  XK
   YE YT
   ZA ZM ZW
 `.trim().split(/\s+/);

@@ -1,5 +1,5 @@
-// Traduction de l'interface : chaque élément porteur de `data-texte="clé"`
-// reçoit le texte de cette clé dans la langue chargée.
+// Textes de l'interface : chaque élément porteur de `data-texte="clé"` reçoit
+// le texte de cette clé dans la langue chargée (fichiers textes/<langue>.js).
 let textes = {};
 
 export async function chargerLangue(langue) {
@@ -10,6 +10,6 @@ export async function chargerLangue(langue) {
   }
 }
 
-export function texte(cle, valeurs = {}) {
-  return (textes[cle] ?? cle).replace(/\{(\w+)\}/g, (_, nom) => valeurs[nom]);
+export function texte(cle) {
+  return textes[cle] ?? cle;
 }

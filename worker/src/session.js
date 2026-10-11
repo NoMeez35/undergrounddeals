@@ -1,7 +1,8 @@
 // Session sans stockage : un cookie signé (HMAC) qui contient le SteamID et sa
 // date d'expiration. Rien d'autre que le SteamID n'est conservé côté serveur.
+// Chaque visite renouvelle le cookie pour 30 jours (voir /api/moi).
 // Limite : se déconnecter efface le cookie du navigateur, mais une copie volée
-// du cookie resterait valable jusqu'à son expiration.
+// du cookie resterait valable jusqu'à son expiration, et pourrait être renouvelée.
 import { enteteCookie, enteteCookieSupprime, lireCookie } from "./cookies.js";
 import { lireSteamId } from "./steam-id.js";
 

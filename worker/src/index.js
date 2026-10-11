@@ -1,12 +1,11 @@
-import { CHEMIN_CONNEXION, ERREUR_CONNEXION_STEAM } from "../../app/public/chemins.js";
-import { lireLangue } from "../../app/public/langues.js";
-import { lirePays } from "../../app/public/pays.js";
+import { CHEMIN_CONNEXION, CHEMIN_CONNEXION_STEAM, ERREUR_CONNEXION_STEAM } from "../../app/public/chemins.js";
 import { enteteCookie, enteteCookieSupprime, lireCookie } from "./cookies.js";
 import { cookieSessionSupprime, creerCookieSession, lireSession } from "./session.js";
+import { lireReglages } from "./reglages.js";
 import { lireProfilSteam } from "./steam-profil.js";
 import { urlConnexionSteam, verifierRetourSteam } from "./steam-openid.js";
 
-const CHEMIN_RETOUR_STEAM = "/api/auth/steam/retour";
+const CHEMIN_RETOUR_STEAM = `${CHEMIN_CONNEXION_STEAM}/retour`;
 // Jeton à usage unique qui relie le retour de Steam au navigateur qui a lancé la connexion.
 const COOKIE_ETAT = "ud_etat";
 const CHEMIN_COOKIE_ETAT = "/api/auth";
@@ -59,6 +58,7 @@ function nonConnecte() {
 
 // `pays` et `langue` restent null tant que l'utilisateur ne les a pas confirmés ;
 // `paysProfil` (profil Steam public) sert alors à proposer un pays.
+// Chaque visite prolonge la session : seul un utilisateur absent 30 jours est déconnecté.
 async function profilConnecte(request, env) {
   const utilisateur = await utilisateurConnecte(request, env);
   if (!utilisateur) return nonConnecte();
@@ -73,7 +73,12 @@ async function profilConnecte(request, env) {
       langue: utilisateur.langue,
       paysProfil: profil?.pays ?? null,
     },
-    { headers: SANS_CACHE },
+    {
+      headers: {
+        ...SANS_CACHE,
+        "Set-Cookie": await creerCookieSession(utilisateur.steam_id, env.SESSION_SECRET),
+      },
+    },
   );
 }
 
@@ -83,15 +88,13 @@ async function enregistrerReglages(request, env) {
   const utilisateur = await utilisateurConnecte(request, env);
   if (!utilisateur) return nonConnecte();
 
-  const corps = await request.json().catch(() => null);
-  const pays = lirePays(corps?.pays);
-  const langue = lireLangue(corps?.langue);
-  if (!pays || !langue) {
+  const reglages = lireReglages(await request.json().catch(() => null));
+  if (!reglages) {
     return Response.json({ erreur: "pays ou langue invalide" }, { status: 400, headers: SANS_CACHE });
   }
 
   await env.DB.prepare("UPDATE utilisateurs SET pays = ?, langue = ? WHERE steam_id = ?")
-    .bind(pays, langue, utilisateur.steam_id)
+    .bind(reglages.pays, reglages.langue, utilisateur.steam_id)
     .run();
   return new Response(null, { status: 204 });
 }
@@ -101,7 +104,7 @@ export default {
     const url = new URL(request.url);
 
     switch (`${request.method} ${url.pathname}`) {
-      case "GET /api/auth/steam":
+      case `GET ${CHEMIN_CONNEXION_STEAM}`:
         return demarrerConnexion(url);
       case `GET ${CHEMIN_RETOUR_STEAM}`:
         return terminerConnexion(request, url, env);

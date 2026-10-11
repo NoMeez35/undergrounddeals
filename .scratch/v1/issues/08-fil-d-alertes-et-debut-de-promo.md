@@ -12,6 +12,7 @@ Premier type d'alerte de bout en bout : quand un relevé détecte qu'une promo c
 - [ ] Une alerte par début de promo ; pas de nouvelle alerte tant que la promo continue.
 - [ ] Une promo qui reprend après une interruption crée une nouvelle alerte.
 - [ ] Une réduction de lancement compte comme un début de promo.
+- [ ] Changer de pays ne déclenche aucune alerte rétroactive (transféré du ticket 04).
 - [ ] Le Fil d'alertes liste les alertes, de la plus récente à la plus ancienne, avec le produit, le prix, la réduction et un lien vers la page Steam.
 
 ## Comments

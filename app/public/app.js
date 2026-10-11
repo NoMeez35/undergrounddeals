@@ -1,21 +1,42 @@
-import { CHEMIN_CONNEXION, CHEMIN_REGLAGES, ERREUR_CONNEXION_STEAM } from "/chemins.js";
+import {
+  CHEMIN_ACCUEIL,
+  CHEMIN_CONNEXION,
+  CHEMIN_CONNEXION_STEAM,
+  CHEMIN_REGLAGES,
+  ERREUR_CONNEXION_STEAM,
+} from "/chemins.js";
 import { LANGUES, proposerLangue } from "/langues.js";
 import { PAYS, proposerPays } from "/pays.js";
-import { chargerLangue, texte } from "/traduction.js";
+import { chargerLangue, texte } from "/textes.js";
 
 const elementParId = (id) => document.getElementById(id);
 
+// Écrans de la page, chacun repéré par l'identifiant de sa section.
+const ECRANS = {
+  connexion: "ecran-connexion",
+  accueil: "ecran-accueil",
+  reglages: "ecran-reglages",
+};
+
+// L'écran Réglages sert aussi à la première connexion, pour confirmer les choix proposés.
+const MODES_REGLAGES = {
+  premiereConnexion: { titre: "choix.titre", bouton: "choix.confirmer", explication: true, retour: false },
+  reglages: { titre: "reglages.titre", bouton: "reglages.enregistrer", explication: false, retour: true },
+};
+
+elementParId("lien-connexion-steam").href = CHEMIN_CONNEXION_STEAM;
+elementParId("lien-reglages").href = CHEMIN_REGLAGES;
+elementParId("retour-reglages").href = CHEMIN_ACCUEIL;
+
 function afficher(ecran) {
   elementParId("chargement").hidden = true;
-  elementParId("ecran-connexion").hidden = ecran !== "connexion";
-  elementParId("ecran-accueil").hidden = ecran !== "accueil";
-  elementParId("ecran-preferences").hidden = ecran !== "preferences";
+  for (const id of Object.values(ECRANS)) elementParId(id).hidden = id !== ecran;
 }
 
 function afficherConnexion() {
   const parametres = new URLSearchParams(location.search);
   elementParId("erreur-connexion").hidden = parametres.get("erreur") !== ERREUR_CONNEXION_STEAM;
-  afficher("connexion");
+  afficher(ECRANS.connexion);
 }
 
 function afficherAccueil({ steamId, nom, avatar }) {
@@ -24,7 +45,7 @@ function afficherAccueil({ steamId, nom, avatar }) {
     elementParId("avatar").src = avatar;
     elementParId("avatar").hidden = false;
   }
-  afficher("accueil");
+  afficher(ECRANS.accueil);
 }
 
 function option(valeur, libelle) {
@@ -46,16 +67,17 @@ function remplirPays(langue, paysChoisi) {
   elementParId("pays").value = paysChoisi ?? "";
 }
 
-// Même formulaire pour la première connexion (choix à confirmer) et pour les Réglages.
-function afficherPreferences({ premiereConnexion, langue, pays }) {
-  const cleTitre = premiereConnexion ? "choix.titre" : "reglages.titre";
-  const cleBouton = premiereConnexion ? "choix.confirmer" : "reglages.enregistrer";
-  elementParId("titre-preferences").dataset.texte = cleTitre;
-  elementParId("titre-preferences").textContent = texte(cleTitre);
-  elementParId("valider-preferences").dataset.texte = cleBouton;
-  elementParId("valider-preferences").textContent = texte(cleBouton);
-  elementParId("explication-choix").hidden = !premiereConnexion;
-  elementParId("retour-reglages").hidden = premiereConnexion;
+// Pose un texte traduit qui suivra aussi les changements de langue.
+function poserTexte(id, cle) {
+  elementParId(id).dataset.texte = cle;
+  elementParId(id).textContent = texte(cle);
+}
+
+function afficherReglages(mode, { langue, pays }) {
+  poserTexte("titre-reglages", mode.titre);
+  poserTexte("valider-reglages", mode.bouton);
+  elementParId("explication-choix").hidden = !mode.explication;
+  elementParId("retour-reglages").hidden = !mode.retour;
 
   const choixLangue = elementParId("langue");
   choixLangue.replaceChildren(...Object.entries(LANGUES).map(([code, nom]) => option(code, nom)));
@@ -68,9 +90,9 @@ function afficherPreferences({ premiereConnexion, langue, pays }) {
     remplirPays(choixLangue.value, elementParId("pays").value || null);
   });
 
-  elementParId("preferences").addEventListener("submit", async (evenement) => {
+  elementParId("formulaire-reglages").addEventListener("submit", async (evenement) => {
     evenement.preventDefault();
-    const message = elementParId("message-preferences");
+    const message = elementParId("message-reglages");
     message.hidden = true;
     const reponse = await fetch("/api/reglages", {
       method: "PUT",
@@ -78,16 +100,16 @@ function afficherPreferences({ premiereConnexion, langue, pays }) {
       body: JSON.stringify({ langue: choixLangue.value, pays: elementParId("pays").value }),
     }).catch(() => null);
 
-    if (reponse?.ok && premiereConnexion) {
-      location.replace("/");
+    if (reponse?.ok && mode === MODES_REGLAGES.premiereConnexion) {
+      location.replace(CHEMIN_ACCUEIL);
       return;
     }
-    message.textContent = texte(reponse?.ok ? "reglages.enregistres" : "reglages.erreur");
+    poserTexte("message-reglages", reponse?.ok ? "reglages.enregistres" : "reglages.erreur");
     message.className = reponse?.ok ? "" : "erreur";
     message.hidden = false;
   });
 
-  afficher("preferences");
+  afficher(ECRANS.reglages);
 }
 
 elementParId("deconnexion").addEventListener("click", async () => {
@@ -110,22 +132,23 @@ try {
   } else {
     const moi = await reponse.json();
     if (moi.langue && moi.langue !== langueNavigateur) await chargerLangue(moi.langue);
-    if (location.pathname === CHEMIN_CONNEXION) history.replaceState(null, "", "/");
 
     if (!moi.pays) {
       // Première connexion : langue et pays proposés, à confirmer.
-      if (location.pathname !== "/") history.replaceState(null, "", "/");
-      afficherPreferences({
-        premiereConnexion: true,
+      if (location.pathname !== CHEMIN_ACCUEIL) history.replaceState(null, "", CHEMIN_ACCUEIL);
+      afficherReglages(MODES_REGLAGES.premiereConnexion, {
         langue: langueNavigateur,
         pays: proposerPays(moi.paysProfil, navigator.languages),
       });
     } else if (location.pathname === CHEMIN_REGLAGES) {
-      afficherPreferences({ premiereConnexion: false, langue: moi.langue, pays: moi.pays });
+      afficherReglages(MODES_REGLAGES.reglages, moi);
     } else {
+      if (location.pathname !== CHEMIN_ACCUEIL) history.replaceState(null, "", CHEMIN_ACCUEIL);
       afficherAccueil(moi);
     }
   }
 } catch (erreur) {
-  elementParId("chargement").textContent = texte("serveurIndisponible", { erreur: erreur.message });
+  // Le détail technique, en anglais, ne va que dans la console.
+  console.error(erreur);
+  poserTexte("chargement", "serveurIndisponible");
 }

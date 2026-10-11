@@ -15,21 +15,22 @@
       <section id="ecran-connexion" hidden>
         <p data-texte="connexion.accroche"></p>
         <p id="erreur-connexion" class="erreur" data-texte="connexion.erreur" hidden></p>
-        <a class="bouton" href="/api/auth/steam" data-texte="connexion.bouton"></a>
+        <a id="lien-connexion-steam" class="bouton" data-texte="connexion.bouton"></a>
       </section>
 
       <section id="ecran-accueil" hidden>
         <img id="avatar" alt="" width="96" height="96" hidden />
         <p><span data-texte="accueil.connecte"></span> <strong id="nom"></strong></p>
-        <a class="bouton" href="/reglages" data-texte="accueil.reglages"></a>
+        <a id="lien-reglages" class="bouton" data-texte="accueil.reglages"></a>
         <button id="deconnexion" class="bouton secondaire" type="button" data-texte="deconnexion"></button>
       </section>
 
-      <!-- Choix de la langue et du pays : à la première connexion, puis dans les Réglages. -->
-      <section id="ecran-preferences" hidden>
-        <h2 id="titre-preferences"></h2>
+      <!-- Choix de la langue et du pays : à la première connexion, puis dans les Réglages.
+           Les adresses des liens sont posées par app.js, depuis chemins.js. -->
+      <section id="ecran-reglages" hidden>
+        <h2 id="titre-reglages"></h2>
         <p id="explication-choix" data-texte="choix.explication" hidden></p>
-        <form id="preferences">
+        <form id="formulaire-reglages">
           <label>
             <span data-texte="champ.langue"></span>
             <select id="langue" name="langue" required></select>
@@ -39,10 +40,10 @@
             <select id="pays" name="pays" required></select>
             <small data-texte="champ.paysAide"></small>
           </label>
-          <button id="valider-preferences" class="bouton" type="submit"></button>
+          <button id="valider-reglages" class="bouton" type="submit"></button>
         </form>
-        <p id="message-preferences" role="status" hidden></p>
-        <a id="retour-reglages" class="bouton secondaire" href="/" data-texte="reglages.retour" hidden></a>
+        <p id="message-reglages" role="status" hidden></p>
+        <a id="retour-reglages" class="bouton secondaire" data-texte="reglages.retour" hidden></a>
       </section>
     </main>
   </body>

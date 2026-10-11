@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/style.css" />
     <script type="module">
       import { proposerLangue } from "/langues.js";
-      import { chargerLangue, texte } from "/traduction.js";
+      import { chargerLangue, texte } from "/textes.js";
 
       // Page servie sans passer par l'API : elle suit la langue du navigateur.
       await chargerLangue(proposerLangue(navigator.languages));

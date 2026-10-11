@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import redirections from "../public/_redirects?raw";
 import pageIntrouvable from "../public/404.html?raw";
 import appli from "../public/app.js?raw";
+import { CHEMIN_CONNEXION, CHEMIN_REGLAGES } from "../public/chemins.js";
 import pageAppli from "../public/index.html?raw";
 import { LANGUES, proposerLangue } from "../public/langues.js";
 import { lirePays, PAYS, proposerPays } from "../public/pays.js";
@@ -24,6 +26,7 @@ describe("textes de l'interface", () => {
     const utilisees = [
       ...`${pageAppli}${pageIntrouvable}`.matchAll(/data-texte="([^"]+)"/g),
       ...`${appli}${pageIntrouvable}`.matchAll(/texte\("([^"]+)"/g),
+      ...appli.matchAll(/poserTexte\("[^"]+", "([^"]+)"/g),
       ...appli.matchAll(/"((?:choix|reglages)\.[a-zA-Z]+)"/g),
     ].map(([, cle]) => cle);
 
@@ -63,8 +66,9 @@ describe("proposerPays", () => {
 });
 
 describe("lirePays", () => {
-  it("accepte tous les codes ISO 3166-1, une seule fois chacun", () => {
-    expect(PAYS).toHaveLength(249);
+  it("accepte les 250 pays de Steam (ISO 3166-1 et Kosovo), une seule fois chacun", () => {
+    expect(PAYS).toHaveLength(250);
+    expect(lirePays("XK")).toBe("XK");
     expect(new Set(PAYS).size).toBe(PAYS.length);
     expect(lirePays("fr")).toBe("FR");
   });
@@ -72,4 +76,10 @@ describe("lirePays", () => {
   it.each([["ZZ"], ["FRA"], [""], [null], [42]])("refuse %s", (texte) => {
     expect(lirePays(texte)).toBeNull();
   });
+});
+
+it("chaque écran de l'appli est servi par la page principale (_redirects)", () => {
+  for (const chemin of [CHEMIN_CONNEXION, CHEMIN_REGLAGES]) {
+    expect(redirections).toMatch(new RegExp(`^${chemin} / 200$`, "m"));
+  }
 });

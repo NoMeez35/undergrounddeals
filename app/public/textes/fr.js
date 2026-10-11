@@ -1,8 +1,7 @@
-// Textes de l'interface en français. Mêmes clés dans chaque langue ;
-// {nom} est remplacé par la valeur correspondante.
+// Textes de l'interface en français. Mêmes clés dans chaque langue.
 export default {
   chargement: "Chargement…",
-  serveurIndisponible: "Le serveur ne répond pas ({erreur}).",
+  serveurIndisponible: "Le serveur ne répond pas. Réessayez plus tard.",
   "connexion.accroche": "Suivez les promos, plus bas historiques, sorties et démos de vos jeux Steam.",
   "connexion.erreur": "La connexion via Steam a échoué. Réessayez.",
   "connexion.bouton": "Se connecter via Steam",

@@ -1,8 +1,7 @@
-// Interface texts in English. Same keys in every language;
-// {name} is replaced by the matching value.
+// Textes de l'interface en anglais. Mêmes clés dans chaque langue.
 export default {
   chargement: "Loading…",
-  serveurIndisponible: "The server is not responding ({erreur}).",
+  serveurIndisponible: "The server is not responding. Please try again later.",
   "connexion.accroche": "Track sales, historical lows, releases and demos of your Steam games.",
   "connexion.erreur": "Signing in through Steam failed. Please try again.",
   "connexion.bouton": "Sign in through Steam",
