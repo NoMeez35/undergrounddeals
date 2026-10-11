@@ -1,11 +1,11 @@
 # Relevé horaire des prix
 
-Status: claimed
+Status: resolved
 Blocked by: 05
 
 ## Quoi
 
-Une tâche planifiée (Cron Triggers) relève toutes les heures le prix de chaque produit suivi, une seule fois par couple (produit, pays) quel que soit le nombre d'utilisateurs, uniquement pour les pays ayant au moins un utilisateur. Chaque relevé est conservé : c'est la base du plus bas historique (ADR 0004).
+Une tâche planifiée (Cron Triggers) relève toutes les heures le prix de chaque produit suivi, une seule fois par couple (produit, pays) quel que soit le nombre d'utilisateurs, uniquement pour les pays ayant au moins un utilisateur. Chaque changement de prix relevé est conservé, avec la trace quotidienne des relevés : c'est la base du plus bas historique (ADR 0004).
 
 ## Critères d'acceptation
 
@@ -28,3 +28,10 @@ Une tâche planifiée (Cron Triggers) relève toutes les heures le prix de chaqu
   - Retiré de Steam : `unlisted: true` ou type 14 dans GetItems ; un produit de nouveau en vente ne l'est plus.
   - Mes suivis lit le dernier relevé (plus aucun appel à Steam pour afficher la page), avec l'heure du dernier relevé complet du pays. Un produit pas encore relevé l'indique.
   - En attente du test manuel du porteur du projet.
+- 2026-10-11 : test manuel réussi par le porteur du projet. Corrections après relecture :
+  - Budget compté en requêtes (46 au plus par passage), pas en paquets.
+  - Les pays les plus en retard passent d'abord, et un relevé inachevé continue l'heure suivante au lieu de repartir de zéro.
+  - Une erreur dans un pays ne bloque plus les autres ; Steam en panne arrête le passage.
+  - Trace quotidienne `prix.vu_le` : un prix non vu depuis la veille est périmé. Il n'est plus affiché, et son prochain relevé est marqué `apres_interruption` dans l'historique.
+  - Le passage planifié distinct toutes les 5 minutes est gardé, avec l'accord du porteur du projet : chaque expression cron a ses propres limites.
+

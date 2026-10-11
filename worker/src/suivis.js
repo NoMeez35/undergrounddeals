@@ -1,5 +1,6 @@
 // Produits suivis d'un utilisateur : liste avec derniers prix relevés, ajout manuel, retrait.
 import { ERREURS_AJOUT, LIMITE_DE_SUIVI } from "../../app/public/suivis.js";
+import { jourDeLaVeille } from "./releve.js";
 import { json, sansContenu } from "./reponses.js";
 import { lireSaisieProduit } from "./saisie-produit.js";
 import { lireFichesSteam, SteamIndisponible } from "./steam-boutique.js";
@@ -48,16 +49,11 @@ function produitVersJson({ app_id, type, nom, retire_de_steam }) {
 }
 
 // Dernier prix relevé dans le pays de l'utilisateur, ou null s'il ne l'a pas
-// encore été. Montants mis en forme par Steam ; etat : une valeur de ETATS_PRIX.
+// encore été (ou plus depuis la veille : prix périmé, voir worker/src/releve.js).
+// Montants mis en forme par Steam ; etat : une valeur de ETATS_PRIX.
 function prixVersJson(ligne) {
   if (!ligne.etat) return null;
-  return {
-    etat: ligne.etat,
-    actuel: ligne.prix_affiche,
-    initial: ligne.prix_initial_affiche,
-    reduction: ligne.reduction,
-    depuis: ligne.depuis,
-  };
+  return { etat: ligne.etat, actuel: ligne.prix_affiche, initial: ligne.prix_initial_affiche, reduction: ligne.reduction };
 }
 
 // Produits suivis, du plus récent au plus ancien (ceux d'un même import dans
@@ -67,14 +63,14 @@ function prixVersJson(ligne) {
 export async function listerSuivis({ utilisateur, env }) {
   const [{ results: produits }, { results: nonSuivis }, releve] = await env.DB.batch([
     env.DB.prepare(
-      `SELECT ${COLONNES_PRODUIT}, x.etat, x.prix_affiche, x.prix_initial_affiche, x.reduction, x.depuis
+      `SELECT ${COLONNES_PRODUIT}, px.etat, px.prix_affiche, px.prix_initial_affiche, px.reduction
          FROM suivis s
          JOIN produits p ON p.app_id = s.app_id
-         LEFT JOIN prix x ON x.app_id = s.app_id AND x.pays = ?2
+         LEFT JOIN prix px ON px.app_id = s.app_id AND px.pays = ?2 AND px.vu_le >= ?3
          LEFT JOIN souhaits sh ON sh.steam_id = s.steam_id AND sh.app_id = s.app_id
         WHERE s.steam_id = ?1
         ORDER BY s.ajoute_le DESC, sh.rang, p.nom`,
-    ).bind(utilisateur.steam_id, utilisateur.pays),
+    ).bind(utilisateur.steam_id, utilisateur.pays, jourDeLaVeille()),
     env.DB.prepare(
       `SELECT ${COLONNES_PRODUIT}, sh.ecarte
          FROM souhaits sh JOIN produits p ON p.app_id = sh.app_id

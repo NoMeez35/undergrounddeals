@@ -16,3 +16,4 @@ Détecter quand le prix d'un produit atteint son plus bas historique (calculé �
 
 ## Comments
 - 2026-10-11 (ticket 07) : `historique_prix` ne garde que les changements (état, devise, prix, réduction) ; sa première ligne pour un couple (produit, pays) date le début de la surveillance. Le plus bas historique est le plus petit `prix` à l'état `enVente` dans la même devise.
+- 2026-10-11 (relecture du ticket 07) : le début de surveillance est la dernière ligne d'historique avec `apres_interruption = 1` ; une interruption (prix non vu depuis la veille) remet donc à zéro la période du « plus bas depuis ».

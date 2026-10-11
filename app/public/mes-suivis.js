@@ -5,10 +5,11 @@ import { ERREURS_AJOUT, ETATS_PRIX, TYPES_PRODUIT } from "/suivis.js";
 import { poserTexte, texte } from "/textes.js";
 
 const ADRESSE_PRODUIT_STEAM = "https://store.steampowered.com/app/";
-// Texte d'un produit sans prix, selon l'état de son dernier relevé.
-const CLES_SANS_PRIX = {
-  [ETATS_PRIX.pasEncoreSorti]: "suivis.pasEncoreSorti",
-  [ETATS_PRIX.sansPrix]: "suivis.sansPrix",
+// Affichage d'un produit sans prix, selon l'état de son dernier relevé.
+const AFFICHAGE_SANS_PRIX = {
+  [ETATS_PRIX.gratuit]: { cle: "suivis.gratuit", classe: "badge" },
+  [ETATS_PRIX.pasEncoreSorti]: { cle: "suivis.pasEncoreSorti", classe: "sans-prix" },
+  [ETATS_PRIX.sansPrix]: { cle: "suivis.sansPrix", classe: "sans-prix" },
 };
 
 let ongletActif = TYPES_PRODUIT[0];
@@ -40,8 +41,8 @@ function element(balise, { classe, texte: contenu } = {}) {
 function elementPrix({ prix, retireDeSteam }) {
   if (retireDeSteam) return element("span", { classe: "badge", texte: texte("suivis.retireDeSteam") });
   if (!prix) return element("span", { classe: "sans-prix", texte: texte("suivis.pasEncoreReleve") });
-  if (prix.etat === ETATS_PRIX.gratuit) return element("span", { classe: "badge", texte: texte("suivis.gratuit") });
-  if (prix.etat !== ETATS_PRIX.enVente) return element("span", { classe: "sans-prix", texte: texte(CLES_SANS_PRIX[prix.etat]) });
+  const sansPrix = AFFICHAGE_SANS_PRIX[prix.etat];
+  if (sansPrix) return element("span", { classe: sansPrix.classe, texte: texte(sansPrix.cle) });
   const bloc = element("span", { classe: "prix" });
   bloc.append(element("strong", { texte: prix.actuel }));
   if (prix.reduction > 0) {

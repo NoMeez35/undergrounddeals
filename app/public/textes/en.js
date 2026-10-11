@@ -14,7 +14,7 @@ export default {
   "suivis.vide.jeu": "No games tracked yet.",
   "suivis.vide.dlc": "No DLC tracked yet.",
   "suivis.sansPrix": "Not sold in your country",
-  "suivis.pasEncoreSorti": "Not released yet",
+  "suivis.pasEncoreSorti": "Coming soon",
   "suivis.gratuit": "Free",
   "suivis.releveLe": "Prices last checked:",
   "suivis.pasEncoreReleve": "Price not checked yet",

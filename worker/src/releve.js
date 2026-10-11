@@ -5,18 +5,20 @@
 // - offre gratuite de Cloudflare, par passage planifié : 50 appels externes,
 //   50 requêtes à la base, 10 ms de CPU ; 100 000 écritures par jour ;
 // - Steam : environ 200 appels toutes les 5 minutes à appdetails.
-// Un passage relève au plus PAQUETS_PAR_PASSAGE paquets de 100 produits : par
-// paquet, 1 à 2 appels à Steam (prix, puis fiches des produits sans prix) et
-// 5 requêtes à la base. Avec un passage toutes les 5 minutes, cela fait
-// 12 × 800 = 9 600 couples (produit, pays) par heure ; seuls les changements
-// de prix sont écrits.
-// shortcut: au-delà de 9 600 couples, le relevé d'une heure n'est pas fini ;
-// passer à l'offre payante (1 000 requêtes par passage) et augmenter PAQUETS_PAR_PASSAGE.
+// Un passage s'arrête avant de dépasser BUDGET_REQUETES : 1 requête pour la
+// liste des pays, puis par paquet de 100 produits 5 requêtes et 1 à 2 appels à
+// Steam (prix, puis fiches des produits sans prix), et 2 requêtes pour clore
+// le relevé d'un pays. Avec un passage toutes les 5 minutes, cela fait au plus
+// 12 × 900 = 10 800 couples (produit, pays) par heure.
+// Écritures : chaque changement de prix, plus une par couple et par jour (vu_le).
+// shortcut: au-delà d'environ 10 000 couples, un relevé dure plus d'une heure
+// (il continue là où il s'était arrêté) ; passer à l'offre payante (1 000
+// requêtes par passage) et augmenter BUDGET_REQUETES.
 import { ETATS_PRIX } from "../../app/public/suivis.js";
-import { lireFichesSteam, lirePrixSteam, SteamIndisponible } from "./steam-boutique.js";
+import { lireFichesSteam, lirePrixSteam, SteamIndisponible, TAILLE_PAQUET } from "./steam-boutique.js";
 
-const PAQUETS_PAR_PASSAGE = 8;
-const TAILLE_PAQUET = 100;
+const BUDGET_REQUETES = 46;
+const REQUETES_PAR_PAQUET = 5;
 
 // État d'un produit sans prix, d'après sa fiche Steam. Un jeu pas encore sorti
 // peut être dit gratuit : la sortie passe d'abord.
@@ -26,14 +28,35 @@ function etatSansPrix(fiche) {
   return ETATS_PRIX.sansPrix;
 }
 
-// Champs comparés pour savoir si un relevé change le prix connu.
+// Condition SQL « le prix a changé » entre deux lignes (alias donnés).
 const CHAMPS_COMPARES = ["etat", "devise", "prix", "prix_initial", "reduction"];
-const SQL_RELEVE = `SELECT json_extract(value, '$.appId') AS app_id, json_extract(value, '$.etat') AS etat,
-       json_extract(value, '$.devise') AS devise, json_extract(value, '$.prix') AS prix,
-       json_extract(value, '$.prixInitial') AS prix_initial, json_extract(value, '$.reduction') AS reduction,
-       json_extract(value, '$.prixAffiche') AS prix_affiche,
-       json_extract(value, '$.prixInitialAffiche') AS prix_initial_affiche
-  FROM json_each(?1)`;
+const sqlPrixChange = (avant, apres) => CHAMPS_COMPARES.map((champ) => `${avant}.${champ} IS NOT ${apres}.${champ}`).join(" OR ");
+
+// Lignes d'un tableau JSON lié en ?1, avec les champs demandés (nom JSON → colonne).
+const sqlDepuisJson = (champs) =>
+  `SELECT ${Object.entries(champs)
+    .map(([cle, colonne]) => `json_extract(value, '$.${cle}') AS ${colonne}`)
+    .join(", ")} FROM json_each(?1)`;
+
+const SQL_RELEVES = sqlDepuisJson({
+  appId: "app_id",
+  etat: "etat",
+  devise: "devise",
+  prix: "prix",
+  prixInitial: "prix_initial",
+  reduction: "reduction",
+  prixAffiche: "prix_affiche",
+  prixInitialAffiche: "prix_initial_affiche",
+});
+
+// Jour (AAAA-MM-JJ) précédant la date donnée : un prix vu pour la dernière
+// fois avant ce jour est périmé.
+export function jourDeLaVeille(date = new Date()) {
+  return new Date(date.getTime() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+// Un prix est périmé s'il n'a pas été vu depuis la veille (?4).
+const sqlPerime = (ligne) => `(${ligne}.vu_le IS NULL OR ${ligne}.vu_le < ?4)`;
 
 // Relève un paquet de produits dans un pays et enregistre ce qui a changé.
 // Lève SteamIndisponible si Steam ne répond pas.
@@ -53,30 +76,33 @@ async function releverPaquet(env, appIds, pays, maintenant) {
     .filter((appId) => prix.get(appId) || fiches.has(appId))
     .map((appId) => ({ appId, retire: fiches.get(appId)?.retire === true ? 1 : 0 }));
 
-  const change = CHAMPS_COMPARES.map((champ) => `p.${champ} IS NOT r.${champ}`).join(" OR ");
+  const jour = maintenant.slice(0, 10);
+  const veille = jourDeLaVeille(new Date(maintenant));
   const json = JSON.stringify(releves);
   await env.DB.batch([
     // L'historique d'abord : il compare avec le prix connu avant sa mise à jour.
     env.DB.prepare(
-      `INSERT INTO historique_prix (app_id, pays, releve_le, etat, devise, prix, prix_initial, reduction)
-       SELECT r.app_id, ?2, ?3, r.etat, r.devise, r.prix, r.prix_initial, r.reduction
-         FROM (${SQL_RELEVE}) r LEFT JOIN prix p ON p.app_id = r.app_id AND p.pays = ?2
-        WHERE p.app_id IS NULL OR ${change}`,
-    ).bind(json, pays, maintenant),
+      `INSERT INTO historique_prix (app_id, pays, releve_le, etat, devise, prix, prix_initial, reduction, apres_interruption)
+       SELECT r.app_id, ?2, ?3, r.etat, r.devise, r.prix, r.prix_initial, r.reduction,
+              px.app_id IS NULL OR ${sqlPerime("px")}
+         FROM (${SQL_RELEVES}) r LEFT JOIN prix px ON px.app_id = r.app_id AND px.pays = ?2
+        WHERE px.app_id IS NULL OR ${sqlPerime("px")} OR ${sqlPrixChange("px", "r")}`,
+    ).bind(json, pays, maintenant, veille),
+    // Le prix connu n'est réécrit que s'il change, ou une fois par jour pour vu_le.
     env.DB.prepare(
-      `INSERT INTO prix (app_id, pays, etat, devise, prix, prix_initial, reduction, prix_affiche, prix_initial_affiche, depuis)
-       SELECT r.app_id, ?2, r.etat, r.devise, r.prix, r.prix_initial, r.reduction, r.prix_affiche, r.prix_initial_affiche, ?3
-         FROM (${SQL_RELEVE}) r WHERE true
+      `INSERT INTO prix (app_id, pays, etat, devise, prix, prix_initial, reduction, prix_affiche, prix_initial_affiche, depuis, vu_le)
+       SELECT r.app_id, ?2, r.etat, r.devise, r.prix, r.prix_initial, r.reduction, r.prix_affiche, r.prix_initial_affiche, ?3, ?5
+         FROM (${SQL_RELEVES}) r WHERE true
        ON CONFLICT (app_id, pays) DO UPDATE SET
+         depuis = CASE WHEN ${sqlPrixChange("prix", "excluded")} OR ${sqlPerime("prix")} THEN excluded.depuis ELSE prix.depuis END,
          etat = excluded.etat, devise = excluded.devise, prix = excluded.prix, prix_initial = excluded.prix_initial,
          reduction = excluded.reduction, prix_affiche = excluded.prix_affiche,
-         prix_initial_affiche = excluded.prix_initial_affiche, depuis = excluded.depuis
-       WHERE ${CHAMPS_COMPARES.map((champ) => `prix.${champ} IS NOT excluded.${champ}`).join(" OR ")}`,
-    ).bind(json, pays, maintenant),
+         prix_initial_affiche = excluded.prix_initial_affiche, vu_le = excluded.vu_le
+       WHERE ${sqlPrixChange("prix", "excluded")} OR prix.vu_le IS NOT excluded.vu_le`,
+    ).bind(json, pays, maintenant, veille, jour),
     env.DB.prepare(
       `UPDATE produits SET retire_de_steam = r.retire
-         FROM (SELECT json_extract(value, '$.appId') AS app_id, json_extract(value, '$.retire') AS retire
-                 FROM json_each(?1)) r
+         FROM (${sqlDepuisJson({ appId: "app_id", retire: "retire" })}) r
         WHERE produits.app_id = r.app_id AND produits.retire_de_steam IS NOT r.retire`,
     ).bind(JSON.stringify(retraits)),
   ]);
@@ -91,50 +117,66 @@ function avancer(env, pays, heure, apresAppId, termineLe) {
     .run();
 }
 
-// Passage planifié : avance le relevé de l'heure, pays par pays. Si Steam ne
-// répond pas, le passage s'arrête et le paquet sera repris au passage suivant ;
-// ce qui n'a pas été relevé à la fin de l'heure l'est à l'heure suivante.
+// Relève un pays jusqu'à la fin de son relevé ou de `budget` requêtes ;
+// renvoie le nombre de requêtes faites. Lève SteamIndisponible si Steam ne
+// répond pas : le paquet en cours sera repris au passage suivant.
+async function releverPays(env, { pays, heure, apres_app_id }, maintenant, budget) {
+  const heureActuelle = maintenant.slice(0, 13);
+  // Sans ligne dans releves_pays (heure null), le pays n'a jamais été relevé.
+  const termine = apres_app_id === null;
+  // Un relevé terminé repart du début à l'heure suivante ; un relevé inachevé
+  // continue là où il s'était arrêté, même si l'heure a changé.
+  if (termine && heure === heureActuelle) return 0;
+  let apres = termine || heure === null ? 0 : apres_app_id;
+  const heureDuReleve = apres === 0 ? heureActuelle : heure;
+
+  let requetes = 0;
+  while (budget - requetes >= REQUETES_PAR_PAQUET) {
+    const { results } = await env.DB.prepare(
+      `SELECT DISTINCT s.app_id FROM suivis s JOIN utilisateurs u ON u.steam_id = s.steam_id
+        WHERE u.pays = ? AND s.app_id > ?
+        ORDER BY s.app_id
+        LIMIT ?`,
+    )
+      .bind(pays, apres, TAILLE_PAQUET)
+      .all();
+    requetes += 1;
+    if (results.length === 0) {
+      await avancer(env, pays, heureDuReleve, null, maintenant);
+      return requetes + 1;
+    }
+
+    const appIds = results.map(({ app_id }) => app_id);
+    await releverPaquet(env, appIds, pays, maintenant);
+    apres = appIds.at(-1);
+    await avancer(env, pays, heureDuReleve, apres, null);
+    requetes += REQUETES_PAR_PAQUET - 1;
+  }
+  return requetes;
+}
+
+// Passage planifié : avance le relevé de chaque pays, les plus en retard
+// d'abord. Si Steam ne répond pas, le passage s'arrête ; une autre erreur ne
+// touche que le pays concerné. Ce qui reste est repris au passage suivant.
 export async function releverLesPrix(env, maintenant = new Date()) {
-  const heure = maintenant.toISOString().slice(0, 13);
-  const { results: pays } = await env.DB.prepare(
-    `SELECT DISTINCT u.pays, r.heure, r.apres_app_id
+  const { results: avancements } = await env.DB.prepare(
+    `SELECT DISTINCT u.pays, r.heure, r.apres_app_id, r.termine_le
        FROM utilisateurs u
        JOIN suivis s ON s.steam_id = u.steam_id
        LEFT JOIN releves_pays r ON r.pays = u.pays
       WHERE u.pays IS NOT NULL
-      ORDER BY u.pays`,
+      ORDER BY r.termine_le, u.pays`,
   ).all();
 
-  let paquets = 0;
-  for (const releve of pays) {
-    // Une nouvelle heure repart du début ; null : relevé de l'heure terminé.
-    let apres = releve.heure === heure ? releve.apres_app_id : 0;
-    while (apres !== null && paquets < PAQUETS_PAR_PASSAGE) {
-      const { results } = await env.DB.prepare(
-        `SELECT DISTINCT s.app_id FROM suivis s JOIN utilisateurs u ON u.steam_id = s.steam_id
-          WHERE u.pays = ? AND s.app_id > ?
-          ORDER BY s.app_id
-          LIMIT ?`,
-      )
-        .bind(releve.pays, apres, TAILLE_PAQUET)
-        .all();
-      if (results.length === 0) {
-        await avancer(env, releve.pays, heure, null, maintenant.toISOString());
-        break;
-      }
-
-      const appIds = results.map(({ app_id }) => app_id);
-      try {
-        await releverPaquet(env, appIds, releve.pays, maintenant.toISOString());
-      } catch (erreur) {
-        if (!(erreur instanceof SteamIndisponible)) throw erreur;
-        console.error(`Relevé des prix (${releve.pays}) : ${erreur.message}`);
-        return;
-      }
-      apres = appIds.at(-1);
-      await avancer(env, releve.pays, heure, apres, null);
-      paquets += 1;
+  let budget = BUDGET_REQUETES - 1;
+  for (const avancement of avancements) {
+    if (budget < REQUETES_PAR_PAQUET) return;
+    try {
+      budget -= await releverPays(env, avancement, maintenant.toISOString(), budget);
+    } catch (erreur) {
+      console.error(`Relevé des prix (${avancement.pays}) : ${erreur.message}`);
+      if (erreur instanceof SteamIndisponible) return;
+      budget -= REQUETES_PAR_PAQUET;
     }
-    if (paquets >= PAQUETS_PAR_PASSAGE) return;
   }
 }

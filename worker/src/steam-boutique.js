@@ -8,7 +8,9 @@
 //   sortie (`release.is_coming_soon`) de 100 produits en une requête ; un AppID
 //   inconnu y a `success: 15` ; un jeu pas encore sorti peut être dit gratuit ;
 //   un produit retiré de la vente partout a `unlisted: true` (ex. F1 23, 2108330)
-//   ou le type 14 (fiche de remplacement, ex. Darksiders II, 50650) ;
+//   ou le type 14 (fiche de remplacement, ex. Darksiders II, 50650), quel que
+//   soit le pays demandé (vérifié aux États-Unis et au Japon) : le retrait se
+//   juge donc sur la fiche d'un seul pays ;
 // - IWishlistService/GetWishlist renvoie `{ response: {} }` pour une liste de
 //   souhaits vide ou privée (la confidentialité « Détails des jeux » du profil).
 import { TYPE_STEAM, TYPES_PRODUIT } from "../../app/public/suivis.js";
@@ -17,7 +19,7 @@ const ADRESSE_APPDETAILS = "https://store.steampowered.com/api/appdetails";
 const ADRESSE_GET_ITEMS = "https://api.steampowered.com/IStoreBrowseService/GetItems/v1/";
 const ADRESSE_GET_WISHLIST = "https://api.steampowered.com/IWishlistService/GetWishlist/v1/";
 // Produits demandés par paquets, pour garder des adresses de taille raisonnable.
-const TAILLE_PAQUET = 100;
+export const TAILLE_PAQUET = 100;
 // Prix et fiches sont gardés en cache 15 minutes par Cloudflare, pour ménager Steam.
 const EN_CACHE = { cf: { cacheTtl: 15 * 60, cacheEverything: true } };
 
