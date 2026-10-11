@@ -18,11 +18,38 @@
         <a id="lien-connexion-steam" class="bouton" data-texte="connexion.bouton"></a>
       </section>
 
+      <!-- Accueil : l'écran Mes suivis. -->
       <section id="ecran-accueil" hidden>
-        <img id="avatar" alt="" width="96" height="96" hidden />
-        <p><span data-texte="accueil.connecte"></span> <strong id="nom"></strong></p>
-        <a id="lien-reglages" class="bouton" data-texte="accueil.reglages"></a>
-        <button id="deconnexion" class="bouton secondaire" type="button" data-texte="deconnexion"></button>
+        <header class="profil">
+          <img id="avatar" alt="" width="40" height="40" hidden />
+          <p><span data-texte="accueil.connecte"></span> <strong id="nom"></strong></p>
+          <a id="lien-reglages" class="bouton secondaire" data-texte="accueil.reglages"></a>
+          <button id="deconnexion" class="bouton secondaire" type="button" data-texte="deconnexion"></button>
+        </header>
+
+        <h2 data-texte="suivis.titre"></h2>
+        <form id="formulaire-ajout">
+          <label>
+            <span data-texte="ajout.libelle"></span>
+            <input id="lien" name="lien" required autocomplete="off" placeholder="https://store.steampowered.com/app/620/" />
+            <small data-texte="ajout.aide"></small>
+          </label>
+          <button id="valider-ajout" class="bouton" type="submit" data-texte="ajout.bouton"></button>
+        </form>
+        <p id="message-ajout" role="status" hidden></p>
+
+        <div class="onglets" role="tablist">
+          <button id="onglet-jeu" role="tab" type="button" data-type="jeu" aria-controls="liste-suivis">
+            <span data-texte="suivis.ongletJeu"></span> <span id="compte-jeu" class="compte"></span>
+          </button>
+          <button id="onglet-dlc" role="tab" type="button" data-type="dlc" aria-controls="liste-suivis">
+            <span data-texte="suivis.ongletDlc"></span> <span id="compte-dlc" class="compte"></span>
+          </button>
+        </div>
+        <p id="erreur-suivis" class="erreur" role="alert" hidden></p>
+        <p id="prix-indisponibles" class="erreur" data-texte="suivis.prixIndisponibles" hidden></p>
+        <ul id="liste-suivis" role="tabpanel"></ul>
+        <p id="liste-vide" hidden></p>
       </section>
 
       <!-- Choix de la langue et du pays : à la première connexion, puis dans les Réglages.

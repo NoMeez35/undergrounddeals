@@ -1,8 +1,7 @@
 import { env } from "cloudflare:test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import worker from "../src/index.js";
+import { appeler, ORIGINE } from "./outils.js";
 
-const ORIGINE = "https://exemple.test";
 const STEAM_ID = "76561197960287930";
 const CINQ_MINUTES = 5 * 60 * 1000;
 const CHAMPS_SIGNES = "signed,op_endpoint,claimed_id,identity,return_to,response_nonce,assoc_handle";
@@ -34,11 +33,6 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllGlobals();
 });
-
-function appeler(chemin, { methode = "GET", cookies = [], corps } = {}) {
-  const entetes = cookies.length ? { Cookie: cookies.join("; ") } : {};
-  return worker.fetch(new Request(`${ORIGINE}${chemin}`, { method: methode, headers: entetes, body: corps }), env);
-}
 
 function enregistrerReglages(cookieSession, reglages) {
   return appeler("/api/reglages", { methode: "PUT", cookies: [cookieSession], corps: JSON.stringify(reglages) });

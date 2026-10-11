@@ -4,7 +4,7 @@ Appli gratuite et open source qui surveille les jeux et DLC Steam qui vous inté
 
 Elle pourra s'installer sur PC et téléphone comme une application (PWA) et se connectera avec votre compte Steam.
 
-> En construction : seule une page de test est en ligne pour l'instant.
+> En construction : on peut déjà se connecter via Steam, choisir sa langue et son pays, et suivre des jeux et DLC ajoutés à la main avec leur prix. Les alertes arrivent dans les prochaines versions.
 
 ## Comment c'est fait
 

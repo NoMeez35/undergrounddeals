@@ -13,3 +13,9 @@ export async function chargerLangue(langue) {
 export function texte(cle) {
   return textes[cle] ?? cle;
 }
+
+// Pose un texte traduit qui suivra aussi les changements de langue.
+export function poserTexte(element, cle) {
+  element.dataset.texte = cle;
+  element.textContent = texte(cle);
+}

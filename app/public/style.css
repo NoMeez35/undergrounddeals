@@ -85,3 +85,100 @@ select {
 small {
   opacity: 0.75;
 }
+
+input {
+  padding: 8px;
+  font: inherit;
+}
+
+/* Écran Mes suivis */
+
+#ecran-accueil {
+  width: min(640px, 100vw - 32px);
+}
+
+.profil {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 12px;
+}
+
+.profil p {
+  margin: 0;
+}
+
+.profil .bouton {
+  padding: 6px 12px;
+}
+
+
+.onglets {
+  display: flex;
+  gap: 4px;
+  width: 100%;
+  border-bottom: 1px solid currentColor;
+}
+
+.onglets button {
+  flex: 1;
+  padding: 10px;
+  border: 0;
+  border-radius: 6px 6px 0 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.onglets button[aria-selected="true"] {
+  background: #1b2838;
+  color: #fff;
+  font-weight: 600;
+}
+
+.compte {
+  opacity: 0.75;
+  font-size: 0.875em;
+}
+
+#liste-suivis {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.suivi {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  text-align: left;
+}
+
+.suivi a {
+  flex: 1 1 200px;
+  color: inherit;
+  font-weight: 600;
+}
+
+.suivi .bouton {
+  padding: 6px 12px;
+}
+
+.prix s,
+.sans-prix {
+  opacity: 0.7;
+}
+
+.reduction {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #4c6b22;
+  color: #beee11;
+  font-weight: 600;
+}

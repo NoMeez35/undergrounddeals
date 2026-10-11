@@ -7,7 +7,8 @@ import {
 } from "/chemins.js";
 import { LANGUES, proposerLangue } from "/langues.js";
 import { PAYS, proposerPays } from "/pays.js";
-import { chargerLangue, texte } from "/textes.js";
+import { preparerMesSuivis } from "/mes-suivis.js";
+import { chargerLangue, poserTexte, texte } from "/textes.js";
 
 const elementParId = (id) => document.getElementById(id);
 
@@ -46,6 +47,7 @@ function afficherAccueil({ steamId, nom, avatar }) {
     elementParId("avatar").hidden = false;
   }
   afficher(ECRANS.accueil);
+  preparerMesSuivis();
 }
 
 function option(valeur, libelle) {
@@ -67,15 +69,9 @@ function remplirPays(langue, paysChoisi) {
   elementParId("pays").value = paysChoisi ?? "";
 }
 
-// Pose un texte traduit qui suivra aussi les changements de langue.
-function poserTexte(id, cle) {
-  elementParId(id).dataset.texte = cle;
-  elementParId(id).textContent = texte(cle);
-}
-
 function afficherReglages(mode, { langue, pays }) {
-  poserTexte("titre-reglages", mode.titre);
-  poserTexte("valider-reglages", mode.bouton);
+  poserTexte(elementParId("titre-reglages"), mode.titre);
+  poserTexte(elementParId("valider-reglages"), mode.bouton);
   elementParId("explication-choix").hidden = !mode.explication;
   elementParId("retour-reglages").hidden = !mode.retour;
 
@@ -104,7 +100,7 @@ function afficherReglages(mode, { langue, pays }) {
       location.replace(CHEMIN_ACCUEIL);
       return;
     }
-    poserTexte("message-reglages", reponse?.ok ? "reglages.enregistres" : "reglages.erreur");
+    poserTexte(message, reponse?.ok ? "reglages.enregistres" : "reglages.erreur");
     message.className = reponse?.ok ? "" : "erreur";
     message.hidden = false;
   });
@@ -150,5 +146,5 @@ try {
 } catch (erreur) {
   // Le détail technique, en anglais, ne va que dans la console.
   console.error(erreur);
-  poserTexte("chargement", "serveurIndisponible");
+  poserTexte(elementParId("chargement"), "serveurIndisponible");
 }

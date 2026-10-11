@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import redirections from "../public/_redirects?raw";
 import pageIntrouvable from "../public/404.html?raw";
 import appli from "../public/app.js?raw";
+import mesSuivis from "../public/mes-suivis.js?raw";
 import { CHEMIN_CONNEXION, CHEMIN_REGLAGES } from "../public/chemins.js";
 import pageAppli from "../public/index.html?raw";
 import { LANGUES, proposerLangue } from "../public/langues.js";
 import { lirePays, PAYS, proposerPays } from "../public/pays.js";
+import { ERREURS_AJOUT, LIMITE_DE_SUIVI, TYPES_PRODUIT } from "../public/suivis.js";
 
 const textes = Object.fromEntries(
   await Promise.all(
@@ -25,9 +27,15 @@ describe("textes de l'interface", () => {
   it("couvrent toutes les clés utilisées par les pages", () => {
     const utilisees = [
       ...`${pageAppli}${pageIntrouvable}`.matchAll(/data-texte="([^"]+)"/g),
-      ...`${appli}${pageIntrouvable}`.matchAll(/texte\("([^"]+)"/g),
-      ...appli.matchAll(/poserTexte\("[^"]+", "([^"]+)"/g),
-      ...appli.matchAll(/"((?:choix|reglages)\.[a-zA-Z]+)"/g),
+      ...`${appli}${mesSuivis}${pageIntrouvable}`.matchAll(/texte\("([^"]+)"/g),
+      ...`${appli}${mesSuivis}`.matchAll(/poserTexte\(.+, "([^"]+)"\)/g),
+      // Clés écrites à part : « choix.titre », « suivis.videJeu »…
+      ...`${appli}${mesSuivis}`.matchAll(/"([a-z]+(?:\.[a-zA-Z]+)+)"/g),
+      // Clés composées : une par raison de refus d'un ajout.
+      ...Object.keys(ERREURS_AJOUT)
+        .filter((erreur) => erreur !== ERREURS_AJOUT.limiteAtteinte)
+        .map((erreur) => [, `ajout.erreur.${erreur}`]),
+      ...TYPES_PRODUIT.map((type) => [, `ajout.erreur.limiteAtteinte.${type}`]),
     ].map(([, cle]) => cle);
 
     expect(utilisees.length).toBeGreaterThan(0);
@@ -35,6 +43,12 @@ describe("textes de l'interface", () => {
       expect(utilisees.filter((cle) => !(cle in textes[langue])), langue).toEqual([]);
     }
   });
+});
+
+it.each(Object.keys(LANGUES))("les messages de limite en %s citent la limite de suivi", (langue) => {
+  for (const type of TYPES_PRODUIT) {
+    expect(textes[langue][`ajout.erreur.limiteAtteinte.${type}`]).toContain(String(LIMITE_DE_SUIVI));
+  }
 });
 
 describe("proposerLangue", () => {

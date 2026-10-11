@@ -17,3 +17,4 @@ Une tâche planifiée (Cron Triggers) relève toutes les heures le prix de chaqu
 ## Comments
 
 - 2026-10-11 (ticket 04) : le pays de chaque utilisateur est la colonne `utilisateurs.pays` ; elle est vide tant qu'il n'a pas confirmé son choix, et ces utilisateurs sont ignorés. Un utilisateur peut changer de pays à tout moment : le nouveau pays doit être relevé dès l'heure suivante.
+- 2026-10-11 (ticket 05) : la colonne `produits.retire_de_steam` existe déjà et la limite de suivi l'ignore ; ce ticket doit la renseigner. Attention : un produit retiré de la vente (ex. F1 23, AppID 2108330) répond encore `success: true` mais sans prix, exactement comme un produit bloqué dans un pays (ex. DLC 378648 au Japon). Le retrait doit donc se juger sur plusieurs pays, pas sur un seul. Les prix de Mes suivis sont aujourd'hui lus en direct chez Steam (`lirePrixSteam`) : les remplacer par le dernier relevé.
