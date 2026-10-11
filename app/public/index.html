@@ -10,7 +10,19 @@
   <body>
     <main>
       <h1>undergrounddeals</h1>
-      <p id="statut">Connexion au serveur…</p>
+      <p id="chargement">Chargement…</p>
+
+      <section id="ecran-connexion" hidden>
+        <p>Suivez les promos, plus bas historiques, sorties et démos de vos jeux Steam.</p>
+        <p id="erreur-connexion" class="erreur" hidden>La connexion via Steam a échoué. Réessayez.</p>
+        <a class="bouton" href="/api/auth/steam">Se connecter via Steam</a>
+      </section>
+
+      <section id="ecran-accueil" hidden>
+        <img id="avatar" alt="" width="96" height="96" hidden />
+        <p>Connecté en tant que <strong id="nom"></strong></p>
+        <button id="deconnexion" class="bouton secondaire" type="button">Se déconnecter</button>
+      </section>
     </main>
   </body>
 </html>

@@ -3,3 +3,4 @@ futur/
 
 node_modules/
 .wrangler/
+worker/.secrets.json

@@ -35,12 +35,14 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - name: Préparer la base D1 et le projet Pages
+      - name: Préparer la base D1, le projet Pages et les secrets
         run: node scripts/preparer-cloudflare.mjs
+        env:
+          STEAM_API_KEY: ${{ secrets.STEAM_API_KEY }}
       - name: Mettre à jour la base D1
         run: npx wrangler d1 migrations apply DB --remote --config worker/wrangler.jsonc
       - name: Déployer le Worker
-        run: npx wrangler deploy --config worker/wrangler.jsonc
+        run: npx wrangler deploy --config worker/wrangler.jsonc --secrets-file worker/.secrets.json
       - name: Déployer l'appli
         working-directory: app
         run: npx wrangler pages deploy --project-name undergrounddeals --branch main --commit-hash ${{ github.sha }}

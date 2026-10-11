@@ -13,7 +13,7 @@ Tout est hébergé sur Cloudflare, en offre gratuite :
 | Partie | Dossier | Rôle |
 |---|---|---|
 | Appli (Cloudflare Pages) | `app/` | Les pages affichées dans le navigateur. Les requêtes `/api/…` sont relayées au serveur. |
-| Serveur (Cloudflare Worker) | `worker/` | L'API ; plus tard, la vérification horaire des prix et l'envoi des alertes. |
+| Serveur (Cloudflare Worker) | `worker/` | L'API et la connexion via Steam ; plus tard, la vérification horaire des prix et l'envoi des alertes. |
 | Base de données (Cloudflare D1) | `worker/migrations/` | Les fichiers SQL qui créent et font évoluer la base, appliqués dans l'ordre. |
 
 Les choix structurants sont expliqués dans `docs/adr/` et le vocabulaire dans `GLOSSARY.md`.
@@ -27,7 +27,7 @@ Chaque envoi sur la branche `main` déclenche GitHub Actions (`.github/workflows
 3. la base est mise à jour avec les nouvelles migrations ;
 4. le serveur, puis l'appli, sont publiés.
 
-Le dépôt a besoin de deux secrets GitHub : `CLOUDFLARE_API_TOKEN` et `CLOUDFLARE_ACCOUNT_ID`.
+Le dépôt a besoin de trois secrets GitHub : `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` et `STEAM_API_KEY`. Le secret qui signe les sessions (`SESSION_SECRET`) est créé automatiquement au premier déploiement.
 
 ## Développement
 

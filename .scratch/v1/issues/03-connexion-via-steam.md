@@ -1,6 +1,6 @@
 # Connexion via Steam
 
-Status: ready-for-agent
+Status: claimed
 Blocked by: 02
 
 ## Quoi

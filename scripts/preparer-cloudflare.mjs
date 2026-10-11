@@ -1,12 +1,16 @@
 // Crée, s'ils n'existent pas encore, les ressources Cloudflare nécessaires au
-// déploiement (base D1, projet Pages), puis écrit l'identifiant de la base dans
-// worker/wrangler.jsonc. Lancé par GitHub Actions avant chaque déploiement.
+// déploiement (base D1, projet Pages), écrit l'identifiant de la base dans
+// worker/wrangler.jsonc et prépare les secrets du Worker dans FICHIER_SECRETS.
+// Lancé par GitHub Actions avant chaque déploiement.
 import { execFileSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 
 const NOM_BASE = "undergrounddeals";
 const NOM_PROJET_PAGES = "undergrounddeals";
 const CONFIG_WORKER = "worker/wrangler.jsonc";
+// Lu par `wrangler deploy --secrets-file` ; ignoré par git.
+const FICHIER_SECRETS = "worker/.secrets.json";
 // Doit rester identique au `database_id` écrit dans worker/wrangler.jsonc.
 const ID_FICTIF = "00000000-0000-0000-0000-000000000000";
 
@@ -55,3 +59,25 @@ if (!projets.some((projet) => projet["Project Name"] === NOM_PROJET_PAGES)) {
   wrangler("pages", "project", "create", NOM_PROJET_PAGES, "--production-branch", "main");
 }
 console.log(`Projet Pages « ${NOM_PROJET_PAGES} » prêt.`);
+
+// Secrets existants du Worker ; liste vide s'il n'a encore jamais été déployé.
+function secretsExistants() {
+  try {
+    return wranglerJson("secret", "list", "--config", CONFIG_WORKER, "--format", "json").map((s) => s.name);
+  } catch (erreur) {
+    console.warn(`Secrets du Worker illisibles (normal au tout premier déploiement) : ${erreur.message}`);
+    return [];
+  }
+}
+
+if (!process.env.STEAM_API_KEY) {
+  throw new Error("La variable d'environnement STEAM_API_KEY est vide.");
+}
+const secrets = { STEAM_API_KEY: process.env.STEAM_API_KEY };
+// Le secret de session n'est créé qu'une fois : le changer déconnecterait tout le monde.
+if (!secretsExistants().includes("SESSION_SECRET")) {
+  console.log("Création du secret de session…");
+  secrets.SESSION_SECRET = randomBytes(32).toString("base64url");
+}
+writeFileSync(FICHIER_SECRETS, JSON.stringify(secrets), { mode: 0o600 });
+console.log(`Secrets du Worker prêts : ${Object.keys(secrets).join(", ")}.`);
