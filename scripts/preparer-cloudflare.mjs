@@ -7,19 +7,34 @@ import { readFileSync, writeFileSync } from "node:fs";
 const NOM_BASE = "undergrounddeals";
 const NOM_PROJET_PAGES = "undergrounddeals";
 const CONFIG_WORKER = "worker/wrangler.jsonc";
+// Doit rester identique au `database_id` écrit dans worker/wrangler.jsonc.
 const ID_FICTIF = "00000000-0000-0000-0000-000000000000";
 
 function wrangler(...args) {
   return execFileSync("npx", ["wrangler", ...args], { encoding: "utf8" });
 }
 
+// Wrangler peut afficher des avertissements avant le JSON : on ne garde que ce
+// qui suit la première ligne commençant par « [ ».
 function wranglerJson(...args) {
   const sortie = wrangler(...args, "--json");
-  return JSON.parse(sortie.slice(sortie.indexOf("[")));
+  const debut = sortie.search(/^\[/m);
+  if (debut === -1) {
+    throw new Error(`Réponse JSON introuvable pour « wrangler ${args.join(" ")} » :\n${sortie}`);
+  }
+  return JSON.parse(sortie.slice(debut));
 }
 
 function trouverBase() {
   return wranglerJson("d1", "list").find((base) => base.name === NOM_BASE);
+}
+
+function ecrireIdBase(id) {
+  const config = readFileSync(CONFIG_WORKER, "utf8");
+  if (!config.includes(ID_FICTIF)) {
+    throw new Error(`${CONFIG_WORKER} ne contient pas l'identifiant fictif ${ID_FICTIF} à remplacer.`);
+  }
+  writeFileSync(CONFIG_WORKER, config.replace(ID_FICTIF, id));
 }
 
 let base = trouverBase();
@@ -28,12 +43,14 @@ if (!base) {
   wrangler("d1", "create", NOM_BASE, "--location", "weur");
   base = trouverBase();
 }
-writeFileSync(CONFIG_WORKER, readFileSync(CONFIG_WORKER, "utf8").replace(ID_FICTIF, base.uuid));
+if (!base) {
+  throw new Error(`La base D1 « ${NOM_BASE} » est introuvable après sa création.`);
+}
+ecrireIdBase(base.uuid);
 console.log(`Base D1 « ${NOM_BASE} » : ${base.uuid}`);
 
 const projets = wranglerJson("pages", "project", "list");
-const projetExiste = projets.some((projet) => Object.values(projet).includes(NOM_PROJET_PAGES));
-if (!projetExiste) {
+if (!projets.some((projet) => projet["Project Name"] === NOM_PROJET_PAGES)) {
   console.log(`Création du projet Pages « ${NOM_PROJET_PAGES} »…`);
   wrangler("pages", "project", "create", NOM_PROJET_PAGES, "--production-branch", "main");
 }

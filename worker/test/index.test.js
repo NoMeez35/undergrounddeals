@@ -1,7 +1,7 @@
 import { SELF } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
 
-describe("API", () => {
+describe("GET /api/statut et chemins inconnus", () => {
   it("renvoie le message lu en base D1", async () => {
     const reponse = await SELF.fetch("https://exemple.test/api/statut");
 
