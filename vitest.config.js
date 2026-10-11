@@ -9,6 +9,9 @@ export default defineConfig(async () => {
       cloudflareTest({
         wrangler: { configPath: "./worker/wrangler.jsonc" },
         miniflare: {
+          // Base vide pour worker/test/migrations.test.js, qui y applique les
+          // migrations une à une.
+          d1Databases: ["DB_MIGRATIONS"],
           bindings: {
             TEST_MIGRATIONS: migrations,
             SESSION_SECRET: "secret-de-test",
