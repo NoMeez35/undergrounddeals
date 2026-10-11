@@ -216,7 +216,7 @@ describe("POST /api/souhaits/relire", () => {
 describe("passage planifié", () => {
   async function passagePlanifie() {
     const taches = [];
-    await worker.scheduled({}, env, { waitUntil: (tache) => taches.push(tache) });
+    await worker.scheduled({ cron: "*/10 * * * *" }, env, { waitUntil: (tache) => taches.push(tache) });
     await Promise.all(taches);
   }
 

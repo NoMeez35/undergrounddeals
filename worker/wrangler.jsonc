@@ -6,8 +6,10 @@
   // Joignable uniquement par l'appli, via la liaison de service `API`.
   "workers_dev": false,
   "preview_urls": false,
-  // Passage planifié toutes les 10 minutes : synchronisation des listes de souhaits.
-  "triggers": { "crons": ["*/10 * * * *"] },
+  // Passages planifiés (voir PASSAGES_PLANIFIES dans src/index.js) : toutes les
+  // 10 minutes la synchronisation des listes de souhaits, toutes les 5 minutes
+  // le relevé des prix. L'offre gratuite permet 5 expressions par compte.
+  "triggers": { "crons": ["*/10 * * * *", "*/5 * * * *"] },
   "d1_databases": [
     {
       "binding": "DB",

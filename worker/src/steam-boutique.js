@@ -7,6 +7,8 @@
 // - IStoreBrowseService/GetItems donne le type, le nom, la gratuité et la
 //   sortie (`release.is_coming_soon`) de 100 produits en une requête ; un AppID
 //   inconnu y a `success: 15` ; un jeu pas encore sorti peut être dit gratuit ;
+//   un produit retiré de la vente partout a `unlisted: true` (ex. F1 23, 2108330)
+//   ou le type 14 (fiche de remplacement, ex. Darksiders II, 50650) ;
 // - IWishlistService/GetWishlist renvoie `{ response: {} }` pour une liste de
 //   souhaits vide ou privée (la confidentialité « Détails des jeux » du profil).
 import { TYPE_STEAM, TYPES_PRODUIT } from "../../app/public/suivis.js";
@@ -18,6 +20,9 @@ const ADRESSE_GET_WISHLIST = "https://api.steampowered.com/IWishlistService/GetW
 const TAILLE_PAQUET = 100;
 // Prix et fiches sont gardés en cache 15 minutes par Cloudflare, pour ménager Steam.
 const EN_CACHE = { cf: { cacheTtl: 15 * 60, cacheEverything: true } };
+
+// Type GetItems d'une fiche de remplacement d'un produit retiré de la vente.
+const TYPE_STEAM_RETIRE = 14;
 
 export class SteamIndisponible extends Error {}
 
@@ -48,8 +53,8 @@ function typeProduit({ type, is_free }) {
 }
 
 // Fiches des produits vus depuis le pays donné : Map AppID demandé →
-// { appId, type, nom, pasEncoreSorti, gratuit } (type null si le produit ne
-// peut pas être suivi). Un
+// { appId, type, nom, pasEncoreSorti, gratuit, retire } (type null si le
+// produit ne peut pas être suivi ; retire : retiré de Steam). Un
 // produit inconnu de Steam ou à la fiche incomplète est absent de la Map.
 // L'AppID de la fiche est celui de Steam, qui peut différer de celui demandé.
 // Lève SteamIndisponible si Steam ne répond pas.
@@ -79,23 +84,28 @@ export async function lireFichesSteam(appIds, pays) {
       nom: fiche.name,
       pasEncoreSorti: fiche.release?.is_coming_soon === true,
       gratuit: fiche.is_free === true,
+      retire: fiche.unlisted === true || fiche.type === TYPE_STEAM_RETIRE,
     });
   }
   return fiches;
 }
 
-function prixAffiche(prix) {
-  if (!prix) return null;
+function lirePrix(prix) {
+  if (!Number.isInteger(prix?.final) || typeof prix.currency !== "string") return null;
   return {
-    actuel: prix.final_formatted,
-    initial: prix.discount_percent > 0 ? prix.initial_formatted : null,
-    reduction: prix.discount_percent,
+    devise: prix.currency,
+    prix: prix.final,
+    prixInitial: Number.isInteger(prix.initial) ? prix.initial : prix.final,
+    reduction: Number.isInteger(prix.discount_percent) ? prix.discount_percent : 0,
+    prixAffiche: prix.final_formatted ?? null,
+    prixInitialAffiche: prix.discount_percent > 0 ? (prix.initial_formatted ?? null) : null,
   };
 }
 
-// Prix actuels dans le pays donné : Map AppID → { actuel, initial, reduction }
-// (montants déjà mis en forme par Steam, dans la devise du pays), ou null pour
-// un produit sans prix. Lève SteamIndisponible si Steam ne répond pas.
+// Prix actuels dans le pays donné : Map AppID → { devise, prix, prixInitial,
+// reduction, prixAffiche, prixInitialAffiche } (montants en centièmes de la
+// devise du pays, et mis en forme par Steam), ou null pour un produit sans prix.
+// Lève SteamIndisponible si Steam ne répond pas.
 export async function lirePrixSteam(appIds, pays) {
   const reponses = await Promise.all(
     enPaquets(appIds).map((paquet) =>
@@ -110,7 +120,7 @@ export async function lirePrixSteam(appIds, pays) {
   const prix = new Map();
   for (const reponse of reponses) {
     for (const [appId, fiche] of Object.entries(reponse ?? {})) {
-      prix.set(Number(appId), prixAffiche(fiche?.data?.price_overview));
+      prix.set(Number(appId), lirePrix(fiche?.data?.price_overview));
     }
   }
   return prix;

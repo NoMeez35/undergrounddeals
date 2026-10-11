@@ -6,3 +6,4 @@ Le plus bas historique est calculé à partir des prix Steam qu'undergrounddeals
 
 - Pendant les premiers mois, un « plus bas historique » ne couvre que la période surveillée ; l'appli affiche « plus bas depuis le [date de début de surveillance] ».
 - Un produit suivi pour la première fois dans un pays repart sans historique, même si d'autres pays en ont un.
+- Seuls les changements de prix sont conservés, pas chaque relevé horaire : c'est la même information, et l'offre gratuite de D1 limite les écritures à 100 000 par jour.

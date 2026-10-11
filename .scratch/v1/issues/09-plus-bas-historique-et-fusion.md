@@ -13,3 +13,6 @@ Détecter quand le prix d'un produit atteint son plus bas historique (calculé �
 - [ ] Une promo qui démarre au plus bas historique donne une seule alerte combinée (« En promo à −60 %, plus bas historique ! »).
 - [ ] L'appli affiche « plus bas depuis le [date de début de surveillance] » tant que l'historique est court.
 - [ ] Le premier relevé d'un produit ne déclenche pas d'alerte de plus bas historique.
+
+## Comments
+- 2026-10-11 (ticket 07) : `historique_prix` ne garde que les changements (état, devise, prix, réduction) ; sa première ligne pour un couple (produit, pays) date le début de la surveillance. Le plus bas historique est le plus petit `prix` à l'état `enVente` dans la même devise.

@@ -3,6 +3,7 @@
 import { CHEMIN_CONNEXION_STEAM } from "../../app/public/chemins.js";
 import { CHEMIN_RETOUR_STEAM, deconnecter, demarrerConnexion, terminerConnexion } from "./connexion.js";
 import { enregistrerReglages } from "./reglages.js";
+import { releverLesPrix } from "./releve.js";
 import { json } from "./reponses.js";
 import { relireSouhaits, suivreSouhait, synchroniserLesListesEnRetard } from "./souhaits.js";
 import { ajouterSuivi, listerSuivis, retirerSuivi } from "./suivis.js";
@@ -30,6 +31,14 @@ const ROUTES_CONNECTEES = {
   [`POST ${ROUTES_PRODUIT.souhaits}`]: suivreSouhait,
 };
 
+// Passages planifiés : expression cron de worker/wrangler.jsonc → tâche. Chaque
+// expression donne des passages distincts, avec chacun les limites de l'offre
+// gratuite (50 appels externes, 50 requêtes à la base).
+export const PASSAGES_PLANIFIES = {
+  "*/10 * * * *": synchroniserLesListesEnRetard,
+  "*/5 * * * *": releverLesPrix,
+};
+
 // Clé de route de la requête, et l'AppID quand le chemin en contient un.
 function lireRoute(request, url) {
   const produit = url.pathname.match(CHEMIN_PRODUIT);
@@ -51,7 +60,8 @@ export default {
     return ROUTES_CONNECTEES[route]({ ...contexte, utilisateur });
   },
 
-  async scheduled(_controleur, env, ctx) {
-    ctx.waitUntil(synchroniserLesListesEnRetard(env));
+  async scheduled(controleur, env, ctx) {
+    const tache = PASSAGES_PLANIFIES[controleur.cron];
+    if (tache) ctx.waitUntil(tache(env));
   },
 };

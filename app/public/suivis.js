@@ -8,6 +8,15 @@ export const TYPES_PRODUIT = Object.keys(TYPE_STEAM);
 // Limite de suivi, par type (voir GLOSSARY.md).
 export const LIMITE_DE_SUIVI = 200;
 
+// État du dernier prix relevé d'un produit dans un pays.
+export const ETATS_PRIX = {
+  enVente: "enVente",
+  gratuit: "gratuit",
+  pasEncoreSorti: "pasEncoreSorti",
+  // Pas en vente dans ce pays, ou retiré de Steam (signalé à part).
+  sansPrix: "sansPrix",
+};
+
 // Raisons pour lesquelles un ajout est refusé (champ `erreur` de la réponse) ;
 // l'appli affiche le texte `ajout.erreur.<raison>`.
 export const ERREURS_AJOUT = {

@@ -18,3 +18,4 @@ Premier type d'alerte de bout en bout : quand un relevé détecte qu'une promo c
 ## Comments
 
 - 2026-10-11 (ticket 04) : un utilisateur peut changer de pays dans les Réglages. Ne créer une alerte que pour les utilisateurs du pays au moment où le relevé détecte l'événement ; changer de pays ne doit déclencher aucune alerte pour une promo déjà en cours ou passée dans le nouveau pays.
+- 2026-10-11 (ticket 07) : le relevé est dans `worker/src/releve.js` (`releverPaquet`). Un début de promo se repère quand un relevé change `prix.reduction` de 0 (ou d'un état autre que `enVente`) à plus de 0 ; `historique_prix` garde chaque changement. Aucune alerte pour un produit à l'état `gratuit`, `pasEncoreSorti` ou `sansPrix`, ni pour un produit retiré de Steam. Le premier relevé d'un produit dans un pays (aucune ligne avant) ne doit pas compter comme un début de promo. Une alerte vise les utilisateurs du pays au moment du relevé.

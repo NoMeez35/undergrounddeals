@@ -64,3 +64,18 @@ export function simulerSteam(etat) {
     }
   });
 }
+
+// price_overview d'appdetails pour un prix en centièmes ; montants mis en forme
+// « 9.69 EUR ».
+export function prixSteam(devise, centimes, reduction = 0) {
+  const montant = (valeur) => `${(valeur / 100).toFixed(2)} ${devise}`;
+  const initial = Math.round(centimes / (1 - reduction / 100));
+  return {
+    currency: devise,
+    initial,
+    final: centimes,
+    discount_percent: reduction,
+    initial_formatted: reduction ? montant(initial) : "",
+    final_formatted: montant(centimes),
+  };
+}

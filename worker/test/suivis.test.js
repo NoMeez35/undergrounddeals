@@ -4,7 +4,7 @@ import { TYPES_PRODUIT } from "../../app/public/suivis.js";
 import { appeler, connecterUtilisateur } from "./outils.js";
 import { simulerSteam } from "./steam-simule.js";
 
-// Boutique Steam simulée : fiches des produits et prix par pays.
+// Boutique Steam simulée : fiches des produits.
 const FICHES = {
   620: { type: "game", name: "Portal 2" },
   378648: { type: "dlc", name: "The Witcher 3: Wild Hunt - Blood and Wine" },
@@ -17,35 +17,14 @@ const FICHES = {
   1250: { type: "dlc", name: "Skins gratuits", is_free: true },
   // Fiche incomplète : Steam répond sans nom.
   1300: { type: "game" },
-  // Sans prix : pas encore sorti (et dit gratuit, comme Steam le fait parfois), gratuit.
-  1500: { type: "game", name: "Jeu à venir", is_free: true, release: { is_coming_soon: true } },
-  570: { type: "game", name: "Dota 2", is_free: true },
   // Jamais ajoutés ailleurs : pour les ajouts simultanés.
   1400: { type: "game", name: "Half-Life" },
-};
-
-function prix(devise, centimes, reduction = 0) {
-  const montant = (valeur) => `${(valeur / 100).toFixed(2)} ${devise}`;
-  const initial = Math.round(centimes / (1 - reduction / 100));
-  return {
-    currency: devise,
-    initial,
-    final: centimes,
-    discount_percent: reduction,
-    initial_formatted: reduction ? montant(initial) : "",
-    final_formatted: montant(centimes),
-  };
-}
-
-const PRIX = {
-  FR: { 620: prix("EUR", 969), 378648: prix("EUR", 999, 50) },
-  US: { 620: prix("USD", 999) },
 };
 
 let steam;
 
 beforeEach(() => {
-  steam = { fiches: FICHES, prix: PRIX };
+  steam = { fiches: FICHES };
   vi.stubGlobal("fetch", simulerSteam(steam));
 });
 
@@ -198,71 +177,6 @@ describe("limite de suivi", () => {
 });
 
 describe("Mes suivis", () => {
-  it("affiche le prix et la réduction dans le pays de l'utilisateur", async () => {
-    const { cookie } = await connecterUtilisateur({ pays: "FR" });
-    await ajouter(cookie, "620");
-    await ajouter(cookie, "378648");
-
-    const suivis = await lister(cookie);
-
-    expect(suivis).toMatchObject({ limite: 200, prixDisponibles: true });
-    expect(suivis.produits.map(({ appId, prix }) => ({ appId, prix }))).toEqual([
-      { appId: 378648, prix: { actuel: "9.99 EUR", initial: "19.98 EUR", reduction: 50 } },
-      { appId: 620, prix: { actuel: "9.69 EUR", initial: null, reduction: 0 } },
-    ]);
-  });
-
-  it("affiche les prix du nouveau pays après un changement dans les Réglages", async () => {
-    const { cookie } = await connecterUtilisateur({ pays: "FR" });
-    await ajouter(cookie, "620");
-
-    await appeler("/api/reglages", {
-      methode: "PUT",
-      cookies: [cookie],
-      corps: JSON.stringify({ pays: "US", langue: "fr" }),
-    });
-
-    const { produits } = await lister(cookie);
-    expect(produits[0].prix).toMatchObject({ actuel: "9.99 USD" });
-    expect(steam.requetes.at(-1).searchParams.get("cc")).toBe("US");
-  });
-
-  it("indique pourquoi un produit n'a pas de prix : pas encore sorti, gratuit, ou pas en vente dans le pays", async () => {
-    const { cookie } = await connecterUtilisateur({ pays: "US" });
-    for (const appId of ["378648", "570", "1500"]) await ajouter(cookie, appId);
-
-    const { produits } = await lister(cookie);
-
-    expect(produits.map(({ appId, prix, sansPrix }) => ({ appId, prix, sansPrix }))).toEqual([
-      { appId: 1500, prix: null, sansPrix: "pasEncoreSorti" },
-      { appId: 570, prix: null, sansPrix: "gratuit" },
-      { appId: 378648, prix: null, sansPrix: null },
-    ]);
-  });
-
-  it("liste les produits sans prix si Steam ne répond pas", async () => {
-    const { cookie } = await connecterUtilisateur();
-    await ajouter(cookie, "620");
-    steam.enPanne = true;
-
-    const suivis = await lister(cookie);
-
-    expect(suivis.prixDisponibles).toBe(false);
-    expect(suivis.produits).toMatchObject([{ appId: 620, prix: null }]);
-  });
-
-  it("demande les prix de tous les produits en une seule requête", async () => {
-    const { cookie } = await connecterUtilisateur();
-    await ajouter(cookie, "620");
-    await ajouter(cookie, "378648");
-    steam.requetes = [];
-
-    await lister(cookie);
-
-    expect(steam.requetes).toHaveLength(1);
-    expect(steam.requetes[0].searchParams.get("appids").split(",").sort()).toEqual(["378648", "620"]);
-  });
-
   it("retire un produit", async () => {
     const { cookie } = await connecterUtilisateur();
     await ajouter(cookie, "620");

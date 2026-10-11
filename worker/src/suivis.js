@@ -1,8 +1,8 @@
-// Produits suivis d'un utilisateur : liste avec prix, ajout manuel, retrait.
+// Produits suivis d'un utilisateur : liste avec derniers prix relevés, ajout manuel, retrait.
 import { ERREURS_AJOUT, LIMITE_DE_SUIVI } from "../../app/public/suivis.js";
 import { json, sansContenu } from "./reponses.js";
 import { lireSaisieProduit } from "./saisie-produit.js";
-import { lireFichesSteam, lirePrixSteam, SteamIndisponible } from "./steam-boutique.js";
+import { lireFichesSteam, SteamIndisponible } from "./steam-boutique.js";
 import { paysDe } from "./utilisateur.js";
 
 export const COLONNES_PRODUIT = "p.app_id, p.type, p.nom, p.retire_de_steam";
@@ -43,66 +43,53 @@ export async function siSteamRepond(promesse, siPanne) {
   }
 }
 
-// Raison de l'absence de prix d'après la fiche Steam : "pasEncoreSorti",
-// "gratuit", ou null (pas en vente dans le pays, retiré de la vente, ou inconnue).
-// Un jeu pas encore sorti peut être dit gratuit : la sortie passe d'abord.
-function raisonSansPrix(fiche) {
-  if (fiche?.pasEncoreSorti) return "pasEncoreSorti";
-  if (fiche?.gratuit) return "gratuit";
-  return null;
-}
-
 function produitVersJson({ app_id, type, nom, retire_de_steam }) {
   return { appId: app_id, type, nom, retireDeSteam: retire_de_steam === 1 };
 }
 
+// Dernier prix relevé dans le pays de l'utilisateur, ou null s'il ne l'a pas
+// encore été. Montants mis en forme par Steam ; etat : une valeur de ETATS_PRIX.
+function prixVersJson(ligne) {
+  if (!ligne.etat) return null;
+  return {
+    etat: ligne.etat,
+    actuel: ligne.prix_affiche,
+    initial: ligne.prix_initial_affiche,
+    reduction: ligne.reduction,
+    depuis: ligne.depuis,
+  };
+}
+
 // Produits suivis, du plus récent au plus ancien (ceux d'un même import dans
-// l'ordre de la liste de souhaits), avec leur prix actuel dans le pays de
-// l'utilisateur ; puis les produits de sa liste de souhaits qui ne sont pas
-// suivis. Si Steam ne répond pas, les prix manquent et `prixDisponibles` vaut false.
+// l'ordre de la liste de souhaits), avec leur dernier prix relevé dans le pays
+// de l'utilisateur et l'heure du dernier relevé complet (`releveLe`) ; puis les
+// produits de sa liste de souhaits qui ne sont pas suivis.
 export async function listerSuivis({ utilisateur, env }) {
-  const [{ results: produits }, { results: nonSuivis }] = await env.DB.batch([
+  const [{ results: produits }, { results: nonSuivis }, releve] = await env.DB.batch([
     env.DB.prepare(
-      `SELECT ${COLONNES_PRODUIT}
+      `SELECT ${COLONNES_PRODUIT}, x.etat, x.prix_affiche, x.prix_initial_affiche, x.reduction, x.depuis
          FROM suivis s
          JOIN produits p ON p.app_id = s.app_id
+         LEFT JOIN prix x ON x.app_id = s.app_id AND x.pays = ?2
          LEFT JOIN souhaits sh ON sh.steam_id = s.steam_id AND sh.app_id = s.app_id
-        WHERE s.steam_id = ?
+        WHERE s.steam_id = ?1
         ORDER BY s.ajoute_le DESC, sh.rang, p.nom`,
-    ).bind(utilisateur.steam_id),
+    ).bind(utilisateur.steam_id, utilisateur.pays),
     env.DB.prepare(
       `SELECT ${COLONNES_PRODUIT}, sh.ecarte
          FROM souhaits sh JOIN produits p ON p.app_id = sh.app_id
         WHERE sh.steam_id = ?1 AND ${SQL_SOUHAIT_NON_SUIVI}
         ORDER BY sh.rang`,
     ).bind(utilisateur.steam_id),
+    env.DB.prepare("SELECT termine_le FROM releves_pays WHERE pays = ?").bind(utilisateur.pays),
   ]);
-
-  const prix =
-    produits.length > 0 && utilisateur.pays
-      ? await siSteamRepond(
-          lirePrixSteam(
-            produits.map((produit) => produit.app_id),
-            utilisateur.pays,
-          ),
-          null,
-        )
-      : new Map();
-  // Pourquoi un produit n'a pas de prix : demandé à Steam pour ceux-là seulement.
-  const sansPrix = produits.filter((produit) => prix?.get(produit.app_id) === null).map((produit) => produit.app_id);
-  const fiches =
-    sansPrix.length > 0 ? await siSteamRepond(lireFichesSteam(sansPrix, utilisateur.pays), new Map()) : new Map();
 
   return json({
     limite: LIMITE_DE_SUIVI,
-    prixDisponibles: prix !== null,
+    releveLe: releve.results[0]?.termine_le ?? null,
     // null tant que la liste n'a jamais été lue, false si elle est vide ou privée.
     souhaitsVisibles: utilisateur.souhaits_visibles === null ? null : utilisateur.souhaits_visibles === 1,
-    produits: produits.map((produit) => ({
-      ...produitVersJson(produit),
-      prix: prix?.get(produit.app_id) ?? null,
-      sansPrix: raisonSansPrix(fiches.get(produit.app_id)),
-    })),
+    produits: produits.map((produit) => ({ ...produitVersJson(produit), prix: prixVersJson(produit) })),
     nonSuivis: nonSuivis.map((produit) => ({ ...produitVersJson(produit), ecarte: produit.ecarte === 1 })),
   });
 }

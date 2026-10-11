@@ -1,20 +1,31 @@
 // Écran Mes suivis : ajout manuel, onglets Jeux / DLC, prix, retrait, et
 // produits de la liste de souhaits restés non suivis.
 import { afficherMessage, elementParId } from "/page.js";
-import { ERREURS_AJOUT, TYPES_PRODUIT } from "/suivis.js";
+import { ERREURS_AJOUT, ETATS_PRIX, TYPES_PRODUIT } from "/suivis.js";
 import { poserTexte, texte } from "/textes.js";
 
 const ADRESSE_PRODUIT_STEAM = "https://store.steampowered.com/app/";
-// Texte d'un produit sans prix, selon la raison donnée par le serveur.
-const CLES_SANS_PRIX = { pasEncoreSorti: "suivis.pasEncoreSorti", gratuit: "suivis.gratuit" };
+// Texte d'un produit sans prix, selon l'état de son dernier relevé.
+const CLES_SANS_PRIX = {
+  [ETATS_PRIX.pasEncoreSorti]: "suivis.pasEncoreSorti",
+  [ETATS_PRIX.sansPrix]: "suivis.sansPrix",
+};
 
 let ongletActif = TYPES_PRODUIT[0];
 // Dernière réponse de GET /api/suivis.
-let etatSuivis = { produits: [], nonSuivis: [], limite: 0, prixDisponibles: true, souhaitsVisibles: null };
+let etatSuivis = { produits: [], nonSuivis: [], limite: 0, releveLe: null, souhaitsVisibles: null };
 
 // « −50 % » en français, « -50% » en anglais.
 function reductionAffichee(reduction) {
   return new Intl.NumberFormat(document.documentElement.lang, { style: "percent" }).format(-reduction / 100);
+}
+
+// Heure seule si c'est aujourd'hui, sinon date et heure, dans la langue de l'interface.
+function dateAffichee(iso) {
+  const date = new Date(iso);
+  const options =
+    date.toDateString() === new Date().toDateString() ? { timeStyle: "short" } : { dateStyle: "medium", timeStyle: "short" };
+  return new Intl.DateTimeFormat(document.documentElement.lang, options).format(date);
 }
 
 function element(balise, { classe, texte: contenu } = {}) {
@@ -24,8 +35,13 @@ function element(balise, { classe, texte: contenu } = {}) {
   return nouveau;
 }
 
-function elementPrix({ prix, sansPrix }) {
-  if (!prix) return element("span", { classe: "sans-prix", texte: texte(CLES_SANS_PRIX[sansPrix] ?? "suivis.sansPrix") });
+// Dernier prix relevé, ou ce qui en tient lieu : badges « Retiré de Steam » et
+// « Gratuit », pas encore sorti, pas en vente dans le pays, pas encore relevé.
+function elementPrix({ prix, retireDeSteam }) {
+  if (retireDeSteam) return element("span", { classe: "badge", texte: texte("suivis.retireDeSteam") });
+  if (!prix) return element("span", { classe: "sans-prix", texte: texte("suivis.pasEncoreReleve") });
+  if (prix.etat === ETATS_PRIX.gratuit) return element("span", { classe: "badge", texte: texte("suivis.gratuit") });
+  if (prix.etat !== ETATS_PRIX.enVente) return element("span", { classe: "sans-prix", texte: texte(CLES_SANS_PRIX[prix.etat]) });
   const bloc = element("span", { classe: "prix" });
   bloc.append(element("strong", { texte: prix.actuel }));
   if (prix.reduction > 0) {
@@ -54,7 +70,7 @@ function elementProduit(produit) {
   const ligne = element("li", { classe: "suivi" });
   ligne.append(
     lienSteam(produit),
-    etatSuivis.prixDisponibles ? elementPrix(produit) : "",
+    elementPrix(produit),
     bouton("suivis.retirer", (retirer) => retirerProduit(produit, retirer)),
   );
   return ligne;
@@ -90,7 +106,8 @@ function afficherListe() {
     elementParId(`compte-${type}`).textContent = `${placesPrises(type)} / ${etatSuivis.limite}`;
     elementParId(`onglet-${type}`).setAttribute("aria-selected", String(type === ongletActif));
   }
-  elementParId("prix-indisponibles").hidden = etatSuivis.prixDisponibles;
+  elementParId("releve").hidden = !etatSuivis.releveLe;
+  if (etatSuivis.releveLe) elementParId("heure-releve").textContent = dateAffichee(etatSuivis.releveLe);
 
   const produits = etatSuivis.produits.filter((produit) => produit.type === ongletActif);
   elementParId("liste-suivis").replaceChildren(...produits.map(elementProduit));
