@@ -1,6 +1,6 @@
 # Connexion via Steam
 
-Status: claimed
+Status: resolved
 Blocked by: 02
 
 ## Quoi
@@ -9,11 +9,12 @@ Blocked by: 02
 
 ## Critères d'acceptation
 
-- [ ] Un utilisateur peut se connecter et se déconnecter ; la session persiste entre les visites.
-- [ ] Une réponse OpenID falsifiée ou non vérifiée est refusée.
-- [ ] Un utilisateur non connecté qui ouvre une autre page est renvoyé vers l'écran Connexion.
-- [ ] Après connexion, l'appli affiche le nom et l'avatar Steam de l'utilisateur.
+- [x] Un utilisateur peut se connecter et se déconnecter ; la session persiste entre les visites.
+- [x] Une réponse OpenID falsifiée ou non vérifiée est refusée.
+- [x] Un utilisateur non connecté qui ouvre une autre page est renvoyé vers l'écran Connexion.
+- [x] Après connexion, l'appli affiche le nom et l'avatar Steam de l'utilisateur.
 
 ## Comments
 
 - 2026-10-11 : implémenté et déployé, en attente du test manuel du porteur du projet. Session sans stockage : cookie signé (HMAC, secret `SESSION_SECRET` créé une seule fois au premier déploiement) valable 30 jours. Limite connue : se déconnecter efface le cookie du navigateur, mais une copie volée resterait valable jusqu'à son expiration. Les réponses de Steam de plus de 5 minutes sont refusées (limite le rejeu). Pages inconnues : `404.html` ; `/connexion` est servi par la page d'accueil via une réécriture dans `_redirects`.
+- 2026-10-11 : test manuel réussi par le porteur du projet (connexion, nom et avatar, session conservée, déconnexion). Ticket clos.
