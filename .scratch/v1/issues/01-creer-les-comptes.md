@@ -1,6 +1,6 @@
 # Créer les comptes GitHub, Cloudflare et Ko-fi
 
-Status: ready-for-human
+Status: resolved
 Blocked by: —
 
 ## Quoi
@@ -13,7 +13,7 @@ Le porteur du projet crée les comptes nécessaires, guidé pas à pas par l'age
 - [x] Compte Cloudflare (offre gratuite) créé, sans moyen de paiement enregistré.
 - [x] Jeton d'API Cloudflare et identifiant de compte enregistrés comme secrets du dépôt GitHub.
 - [x] Clé d'API Steam Web (gratuite) obtenue et enregistrée comme secret.
-- [ ] Page Ko-fi créée (facultatif à ce stade) ; son lien est noté dans ce ticket.
+- [x] Page Ko-fi créée (facultatif à ce stade) ; son lien est noté dans ce ticket : https://ko-fi.com/undergrounddeals
 
 ## Notes
 
@@ -29,3 +29,4 @@ Le porteur du projet crée les comptes nécessaires, guidé pas à pas par l'age
 - 2026-10-11 : dépôts poussés. `NoMeez35/undergrounddeals` (public, MIT) et `NoMeez35/undergrounddeals-futur` (privé). Le PC a aussi un autre compte GitHub enregistré (`blknomeez-ai`) : les URL des remotes précisent `NoMeez35@` pour forcer le bon compte. Étape suivante : Cloudflare.
 - 2026-10-11 : compte Cloudflare créé (offre gratuite, sans carte bancaire, double authentification activée). Jeton d'API personnalisé `github-undergrounddeals` (Workers Scripts, D1, Cloudflare Pages : Edit ; Account Settings : Read). Secrets GitHub `CLOUDFLARE_API_TOKEN` et `CLOUDFLARE_ACCOUNT_ID` enregistrés. Étape suivante : clé Steam.
 - 2026-10-11 : clé d'API Steam Web obtenue (domaine déclaré : `undergrounddeals.pages.dev`) et enregistrée dans le secret GitHub `STEAM_API_KEY`. Reste : Ko-fi (facultatif).
+- 2026-10-11 : page Ko-fi créée (https://ko-fi.com/undergrounddeals), paiements via PayPal. Le lien n'apparaîtra dans l'appli qu'au ticket 15 : vérifier d'ici là comment déclarer les dons reçus (URSSAF). Ticket clos.
