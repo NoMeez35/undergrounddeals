@@ -33,6 +33,9 @@ export const PAYS = `
 
 const ENSEMBLE_PAYS = new Set(PAYS);
 
+// Pays utilisé tant que l'utilisateur n'a pas choisi le sien.
+export const PAYS_PAR_DEFAUT = "US";
+
 // Renvoie le code (en majuscules) si c'est un pays connu, sinon null.
 export function lirePays(texte) {
   if (typeof texte !== "string") return null;

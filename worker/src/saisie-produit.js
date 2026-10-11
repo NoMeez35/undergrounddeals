@@ -8,7 +8,7 @@ const LIEN_STEAM =
 
 // Renvoie { appId }, { pack: true } pour un lien de pack, ou null si le texte
 // n'est ni un AppID ni un lien Steam reconnu.
-export function lireLienSteam(texte) {
+export function lireSaisieProduit(texte) {
   if (typeof texte !== "string") return null;
   const saisie = texte.trim();
   if (APP_ID.test(saisie)) return { appId: Number(saisie) };

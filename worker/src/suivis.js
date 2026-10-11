@@ -1,11 +1,35 @@
 // Produits suivis d'un utilisateur : liste avec prix, ajout manuel, retrait.
+import { PAYS_PAR_DEFAUT } from "../../app/public/pays.js";
 import { ERREURS_AJOUT, LIMITE_DE_SUIVI } from "../../app/public/suivis.js";
-import { lireLienSteam } from "./lien-steam.js";
 import { json, sansContenu } from "./reponses.js";
+import { lireSaisieProduit } from "./saisie-produit.js";
 import { lireFicheSteam, lirePrixSteam, SteamIndisponible } from "./steam-boutique.js";
 
-function refus(erreur, status, details = {}) {
-  return json({ erreur, ...details }, { status });
+const COLONNES_PRODUIT = "p.app_id, p.type, p.nom, p.retire_de_steam";
+
+// Statut HTTP de chaque refus d'ajout.
+const STATUT_REFUS = {
+  [ERREURS_AJOUT.lienInvalide]: 400,
+  [ERREURS_AJOUT.pack]: 422,
+  [ERREURS_AJOUT.introuvable]: 404,
+  [ERREURS_AJOUT.typeNonSuivi]: 422,
+  [ERREURS_AJOUT.limiteAtteinte]: 409,
+  [ERREURS_AJOUT.steamIndisponible]: 502,
+};
+
+function refus(erreur, details = {}) {
+  return json({ erreur, ...details }, { status: STATUT_REFUS[erreur] });
+}
+
+// Résultat de la promesse, ou `siPanne` si Steam ne répond pas ; les autres
+// erreurs remontent.
+async function siSteamRepond(promesse, siPanne) {
+  try {
+    return await promesse;
+  } catch (erreur) {
+    if (!(erreur instanceof SteamIndisponible)) throw erreur;
+    return siPanne;
+  }
 }
 
 function produitVersJson({ app_id, type, nom, retire_de_steam }) {
@@ -17,7 +41,7 @@ function produitVersJson({ app_id, type, nom, retire_de_steam }) {
 // et `prixDisponibles` vaut false.
 export async function listerSuivis({ utilisateur, env }) {
   const { results: produits } = await env.DB.prepare(
-    `SELECT p.app_id, p.type, p.nom, p.retire_de_steam
+    `SELECT ${COLONNES_PRODUIT}
        FROM suivis s JOIN produits p ON p.app_id = s.app_id
       WHERE s.steam_id = ?
       ORDER BY s.ajoute_le DESC, p.nom`,
@@ -25,34 +49,29 @@ export async function listerSuivis({ utilisateur, env }) {
     .bind(utilisateur.steam_id)
     .all();
 
-  let prix = new Map();
-  let prixDisponibles = true;
-  if (produits.length > 0 && utilisateur.pays) {
-    try {
-      prix = await lirePrixSteam(
-        produits.map((produit) => produit.app_id),
-        utilisateur.pays,
-      );
-    } catch (erreur) {
-      if (!(erreur instanceof SteamIndisponible)) throw erreur;
-      prixDisponibles = false;
-    }
-  }
+  const prix =
+    produits.length > 0 && utilisateur.pays
+      ? await siSteamRepond(
+          lirePrixSteam(
+            produits.map((produit) => produit.app_id),
+            utilisateur.pays,
+          ),
+          null,
+        )
+      : new Map();
 
   return json({
     limite: LIMITE_DE_SUIVI,
-    prixDisponibles,
+    prixDisponibles: prix !== null,
     produits: produits.map((produit) => ({
       ...produitVersJson(produit),
-      prix: prix.get(produit.app_id) ?? null,
+      prix: prix?.get(produit.app_id) ?? null,
     })),
   });
 }
 
 function lireProduit(env, appId) {
-  return env.DB.prepare("SELECT app_id, type, nom, retire_de_steam FROM produits WHERE app_id = ?")
-    .bind(appId)
-    .first();
+  return env.DB.prepare(`SELECT ${COLONNES_PRODUIT} FROM produits p WHERE p.app_id = ?`).bind(appId).first();
 }
 
 // Produit déjà connu de l'appli, sinon fiche demandée à Steam puis enregistrée.
@@ -61,13 +80,8 @@ async function trouverProduit(env, appId, pays) {
   const connu = await lireProduit(env, appId);
   if (connu) return { produit: connu };
 
-  let fiche;
-  try {
-    fiche = await lireFicheSteam(appId, pays);
-  } catch (erreur) {
-    if (!(erreur instanceof SteamIndisponible)) throw erreur;
-    return { erreur: ERREURS_AJOUT.steamIndisponible };
-  }
+  const fiche = await siSteamRepond(lireFicheSteam(appId, pays), { erreur: ERREURS_AJOUT.steamIndisponible });
+  if (fiche?.erreur) return fiche;
   if (!fiche) return { erreur: ERREURS_AJOUT.introuvable };
   if (!fiche.type) return { erreur: ERREURS_AJOUT.typeNonSuivi };
 
@@ -77,28 +91,24 @@ async function trouverProduit(env, appId, pays) {
   return { produit: await lireProduit(env, fiche.appId) };
 }
 
-const STATUT_REFUS = {
-  [ERREURS_AJOUT.introuvable]: 404,
-  [ERREURS_AJOUT.typeNonSuivi]: 422,
-  [ERREURS_AJOUT.steamIndisponible]: 502,
-};
+function estSuivi(env, steamId, appId) {
+  return env.DB.prepare("SELECT 1 FROM suivis WHERE steam_id = ? AND app_id = ?").bind(steamId, appId).first();
+}
 
 // Ajout manuel à partir d'un AppID ou d'un lien Steam (corps : { lien }).
 // Répond 201 avec le produit ajouté, 200 avec `dejaSuivi` s'il l'était déjà,
 // ou une erreur de ERREURS_AJOUT.
 export async function ajouterSuivi({ request, utilisateur, env }) {
   const corps = await request.json().catch(() => null);
-  const lien = lireLienSteam(corps?.lien);
-  if (!lien) return refus(ERREURS_AJOUT.lienInvalide, 400);
-  if (lien.pack) return refus(ERREURS_AJOUT.pack, 422);
+  const saisie = lireSaisieProduit(corps?.lien);
+  if (!saisie) return refus(ERREURS_AJOUT.lienInvalide);
+  if (saisie.pack) return refus(ERREURS_AJOUT.pack);
 
-  const { produit, erreur } = await trouverProduit(env, lien.appId, utilisateur.pays ?? "US");
-  if (erreur) return refus(erreur, STATUT_REFUS[erreur]);
+  const { produit, erreur } = await trouverProduit(env, saisie.appId, utilisateur.pays ?? PAYS_PAR_DEFAUT);
+  if (erreur) return refus(erreur);
 
-  const dejaSuivi = await env.DB.prepare("SELECT 1 FROM suivis WHERE steam_id = ? AND app_id = ?")
-    .bind(utilisateur.steam_id, produit.app_id)
-    .first();
-  if (dejaSuivi) return json({ produit: produitVersJson(produit), dejaSuivi: true });
+  const dejaSuivi = { produit: produitVersJson(produit), dejaSuivi: true };
+  if (await estSuivi(env, utilisateur.steam_id, produit.app_id)) return json(dejaSuivi);
 
   // L'ajout et la vérification de la limite se font en une seule requête, pour
   // que deux ajouts simultanés ne puissent pas la dépasser.
@@ -112,7 +122,10 @@ export async function ajouterSuivi({ request, utilisateur, env }) {
     .bind(utilisateur.steam_id, produit.app_id, new Date().toISOString(), produit.type, LIMITE_DE_SUIVI)
     .run();
   if (meta.changes === 0) {
-    return refus(ERREURS_AJOUT.limiteAtteinte, 409, { type: produit.type, limite: LIMITE_DE_SUIVI });
+    // Rien d'inséré : soit la limite est atteinte, soit un ajout simultané du
+    // même produit vient de passer.
+    if (await estSuivi(env, utilisateur.steam_id, produit.app_id)) return json(dejaSuivi);
+    return refus(ERREURS_AJOUT.limiteAtteinte, { type: produit.type, limite: LIMITE_DE_SUIVI });
   }
 
   return json({ produit: produitVersJson(produit), dejaSuivi: false }, { status: 201 });

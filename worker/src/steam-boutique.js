@@ -5,13 +5,13 @@
 //   produit sans prix dans le pays (gratuit, pas encore sorti, retiré de la vente
 //   ou bloqué dans ce pays) renvoie `data: []` ;
 // - un pays sans boutique (ex. AQ, KP) reçoit les prix en dollars américains.
+import { TYPE_STEAM, TYPES_PRODUIT } from "../../app/public/suivis.js";
+
 const ADRESSE_APPDETAILS = "https://store.steampowered.com/api/appdetails";
 // Prix demandés par paquets, pour garder des adresses de taille raisonnable.
 const TAILLE_PAQUET_PRIX = 100;
 // Les prix sont gardés en cache 15 minutes par Cloudflare, pour ménager Steam.
 const CACHE_PRIX_SECONDES = 15 * 60;
-
-const TYPES_STEAM = { game: "jeu", dlc: "dlc" };
 
 export class SteamIndisponible extends Error {}
 
@@ -25,17 +25,24 @@ async function appdetails(parametres, options) {
   });
 }
 
-// Fiche d'un produit vu depuis le pays donné. Renvoie
-// { appId, type: "jeu" | "dlc" | null, nom }, ou null si Steam ne le connaît pas.
-// L'AppID renvoyé est celui de Steam, qui peut différer de celui demandé.
-// Lève SteamIndisponible si Steam ne répond pas.
+// Type de produit suivi d'une fiche Steam, ou null si elle ne peut pas être
+// suivie : ni jeu ni DLC, ou DLC gratuit (un DLC suivi est payant, voir GLOSSARY.md).
+function typeProduit({ type, is_free }) {
+  const typeSuivi = TYPES_PRODUIT.find((candidat) => TYPE_STEAM[candidat] === type) ?? null;
+  return typeSuivi === "dlc" && is_free ? null : typeSuivi;
+}
+
+// Fiche d'un produit vu depuis le pays donné. Renvoie { appId, type, nom } (type
+// null si le produit ne peut pas être suivi), ou null si Steam ne le connaît pas
+// ou renvoie une fiche incomplète. L'AppID renvoyé est celui de Steam, qui peut
+// différer de celui demandé. Lève SteamIndisponible si Steam ne répond pas.
 export async function lireFicheSteam(appId, pays) {
   const reponse = await appdetails({ appids: appId, cc: pays, l: "english" });
   const fiche = reponse?.[appId];
-  if (!fiche?.success) return null;
+  if (!fiche?.success || typeof fiche.data?.name !== "string") return null;
   return {
     appId: fiche.data.steam_appid ?? appId,
-    type: TYPES_STEAM[fiche.data.type] ?? null,
+    type: typeProduit(fiche.data),
     nom: fiche.data.name,
   };
 }

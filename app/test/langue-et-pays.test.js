@@ -29,13 +29,17 @@ describe("textes de l'interface", () => {
       ...`${pageAppli}${pageIntrouvable}`.matchAll(/data-texte="([^"]+)"/g),
       ...`${appli}${mesSuivis}${pageIntrouvable}`.matchAll(/texte\("([^"]+)"/g),
       ...`${appli}${mesSuivis}`.matchAll(/poserTexte\(.+, "([^"]+)"\)/g),
-      // Clés écrites à part : « choix.titre », « suivis.videJeu »…
+      // Clés écrites à part : « choix.titre », « reglages.erreur »…
       ...`${appli}${mesSuivis}`.matchAll(/"([a-z]+(?:\.[a-zA-Z]+)+)"/g),
-      // Clés composées : une par raison de refus d'un ajout.
+      // Clés composées : une par raison de refus d'un ajout, une par type de produit.
       ...Object.keys(ERREURS_AJOUT)
         .filter((erreur) => erreur !== ERREURS_AJOUT.limiteAtteinte)
         .map((erreur) => [, `ajout.erreur.${erreur}`]),
-      ...TYPES_PRODUIT.map((type) => [, `ajout.erreur.limiteAtteinte.${type}`]),
+      ...TYPES_PRODUIT.flatMap((type) => [
+        [, `ajout.erreur.limiteAtteinte.${type}`],
+        [, `suivis.vide.${type}`],
+        [, `suivis.onglet.${type}`],
+      ]),
     ].map(([, cle]) => cle);
 
     expect(utilisees.length).toBeGreaterThan(0);

@@ -1,19 +1,13 @@
 // Écran Mes suivis : ajout manuel, onglets Jeux / DLC, prix et retrait.
+import { afficherMessage, elementParId } from "/page.js";
 import { ERREURS_AJOUT, TYPES_PRODUIT } from "/suivis.js";
 import { poserTexte, texte } from "/textes.js";
 
-const elementParId = (id) => document.getElementById(id);
 const ADRESSE_PRODUIT_STEAM = "https://store.steampowered.com/app/";
-const CLES_LISTE_VIDE = { jeu: "suivis.videJeu", dlc: "suivis.videDlc" };
 
 let ongletActif = TYPES_PRODUIT[0];
-let suivis = { produits: [], limite: 0, prixDisponibles: true };
-
-function afficherMessage(element, cle, { erreur = false } = {}) {
-  poserTexte(element, cle);
-  element.className = erreur ? "erreur" : "";
-  element.hidden = false;
-}
+// Dernière réponse de GET /api/suivis.
+let etatSuivis = { produits: [], limite: 0, prixDisponibles: true };
 
 // « −50 % » en français, « -50% » en anglais.
 function reductionAffichee(reduction) {
@@ -49,23 +43,24 @@ function elementProduit(produit) {
   retirer.type = "button";
   retirer.addEventListener("click", () => retirerProduit(produit, retirer));
 
-  ligne.append(lien, suivis.prixDisponibles ? elementPrix(produit.prix) : "", retirer);
+  ligne.append(lien, etatSuivis.prixDisponibles ? elementPrix(produit.prix) : "", retirer);
   return ligne;
 }
 
 function afficherListe() {
   for (const type of TYPES_PRODUIT) {
-    const nombre = suivis.produits.filter((produit) => produit.type === type).length;
-    elementParId(`compte-${type}`).textContent = `${nombre} / ${suivis.limite}`;
+    // Comme pour la limite côté serveur, les produits retirés de Steam ne comptent pas.
+    const nombre = etatSuivis.produits.filter((produit) => produit.type === type && !produit.retireDeSteam).length;
+    elementParId(`compte-${type}`).textContent = `${nombre} / ${etatSuivis.limite}`;
     elementParId(`onglet-${type}`).setAttribute("aria-selected", String(type === ongletActif));
   }
-  elementParId("prix-indisponibles").hidden = suivis.prixDisponibles;
+  elementParId("prix-indisponibles").hidden = etatSuivis.prixDisponibles;
 
-  const produits = suivis.produits.filter((produit) => produit.type === ongletActif);
+  const produits = etatSuivis.produits.filter((produit) => produit.type === ongletActif);
   elementParId("liste-suivis").replaceChildren(...produits.map(elementProduit));
   const vide = elementParId("liste-vide");
   vide.hidden = produits.length > 0;
-  poserTexte(vide, CLES_LISTE_VIDE[ongletActif]);
+  poserTexte(vide, `suivis.vide.${ongletActif}`);
 }
 
 async function chargerSuivis() {
@@ -75,7 +70,7 @@ async function chargerSuivis() {
     return;
   }
   elementParId("erreur-suivis").hidden = true;
-  suivis = await reponse.json();
+  etatSuivis = await reponse.json();
   afficherListe();
 }
 
@@ -87,7 +82,7 @@ async function retirerProduit(produit, bouton) {
     afficherMessage(elementParId("message-ajout"), "suivis.erreurRetrait", { erreur: true });
     return;
   }
-  suivis.produits = suivis.produits.filter((autre) => autre.appId !== produit.appId);
+  etatSuivis.produits = etatSuivis.produits.filter((autre) => autre.appId !== produit.appId);
   afficherListe();
 }
 

@@ -8,9 +8,9 @@ import {
 import { LANGUES, proposerLangue } from "/langues.js";
 import { PAYS, proposerPays } from "/pays.js";
 import { preparerMesSuivis } from "/mes-suivis.js";
+import { afficherMessage, elementParId } from "/page.js";
 import { chargerLangue, poserTexte, texte } from "/textes.js";
 
-const elementParId = (id) => document.getElementById(id);
 
 // Écrans de la page, chacun repéré par l'identifiant de sa section.
 const ECRANS = {
@@ -100,9 +100,7 @@ function afficherReglages(mode, { langue, pays }) {
       location.replace(CHEMIN_ACCUEIL);
       return;
     }
-    poserTexte(message, reponse?.ok ? "reglages.enregistres" : "reglages.erreur");
-    message.className = reponse?.ok ? "" : "erreur";
-    message.hidden = false;
+    afficherMessage(message, reponse?.ok ? "reglages.enregistres" : "reglages.erreur", { erreur: !reponse?.ok });
   });
 
   afficher(ECRANS.reglages);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { lireLienSteam } from "../src/lien-steam.js";
+import { lireSaisieProduit } from "../src/saisie-produit.js";
 
-describe("lireLienSteam", () => {
+describe("lireSaisieProduit", () => {
   it.each([
     ["620", 620],
     ["https://store.steampowered.com/app/620/Portal_2/", 620],
@@ -9,13 +9,13 @@ describe("lireLienSteam", () => {
     ["https://steamcommunity.com/app/620/discussions/", 620],
     ["https://store.steampowered.com/agecheck/app/620/", 620],
   ])("lit l'AppID de %s", (texte, appId) => {
-    expect(lireLienSteam(texte)).toEqual({ appId });
+    expect(lireSaisieProduit(texte)).toEqual({ appId });
   });
 
   it.each([["https://store.steampowered.com/sub/7932/"], ["store.steampowered.com/bundle/232"]])(
     "reconnaît un pack : %s",
     (texte) => {
-      expect(lireLienSteam(texte)).toEqual({ pack: true });
+      expect(lireSaisieProduit(texte)).toEqual({ pack: true });
     },
   );
 
@@ -28,6 +28,6 @@ describe("lireLienSteam", () => {
     [""],
     [null],
   ])("refuse %s", (texte) => {
-    expect(lireLienSteam(texte)).toBeNull();
+    expect(lireSaisieProduit(texte)).toBeNull();
   });
 });

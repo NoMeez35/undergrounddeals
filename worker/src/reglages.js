@@ -14,7 +14,7 @@ export function lireReglages(corps) {
 // en changer ne crée aucune alerte pour des événements passés.
 export async function enregistrerReglages({ request, utilisateur, env }) {
   const reglages = lireReglages(await request.json().catch(() => null));
-  if (!reglages) return json({ erreur: "pays ou langue invalide" }, { status: 400 });
+  if (!reglages) return json({ erreur: "reglagesInvalides" }, { status: 400 });
 
   await env.DB.prepare("UPDATE utilisateurs SET pays = ?, langue = ? WHERE steam_id = ?")
     .bind(reglages.pays, reglages.langue, utilisateur.steam_id)

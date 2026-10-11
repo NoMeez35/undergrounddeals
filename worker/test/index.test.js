@@ -209,7 +209,7 @@ describe("PUT /api/reglages", () => {
 
   it.each([
     ["un pays inconnu", JSON.stringify({ pays: "ZZ", langue: "fr" })],
-    ["une langue non traduite", JSON.stringify({ pays: "FR", langue: "de" })],
+    ["une langue que l'interface n'a pas", JSON.stringify({ pays: "FR", langue: "de" })],
     ["un réglage manquant", JSON.stringify({ pays: "FR" })],
     ["un corps qui n'est pas du JSON", "pays=FR"],
   ])("refuse %s sans rien modifier", async (_cas, corps) => {

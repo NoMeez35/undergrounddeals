@@ -1,5 +1,6 @@
 import { env } from "cloudflare:test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { TYPES_PRODUIT } from "../../app/public/suivis.js";
 import { appeler, connecterUtilisateur } from "./outils.js";
 
 // Boutique Steam simulée : fiches des produits et prix par pays.
@@ -11,6 +12,12 @@ const FICHES = {
   400: { type: "game", name: "Portal", steam_appid: 401 },
   // Jamais ajouté ailleurs : sa fiche n'est connue que de Steam.
   730: { type: "game", name: "Counter-Strike 2" },
+  // DLC gratuit : un DLC suivi est payant.
+  1250: { type: "dlc", name: "Pack de skins gratuit", is_free: true },
+  // Fiche incomplète : Steam répond sans nom.
+  1300: { type: "game" },
+  // Jamais ajoutés ailleurs : pour les ajouts simultanés.
+  1400: { type: "game", name: "Half-Life" },
 };
 
 function prix(devise, centimes, reduction = 0) {
@@ -127,6 +134,8 @@ describe("ajout manuel", () => {
     ["un texte quelconque", "Portal 2", 400, "lienInvalide"],
     ["un produit inexistant", "999999", 404, "introuvable"],
     ["une bande-son", "323180", 422, "typeNonSuivi"],
+    ["un DLC gratuit", "1250", 422, "typeNonSuivi"],
+    ["une fiche Steam incomplète", "1300", 404, "introuvable"],
   ])("refuse %s avec un message clair", async (_cas, lien, status, erreur) => {
     const { cookie } = await connecterUtilisateur();
 
@@ -145,6 +154,15 @@ describe("ajout manuel", () => {
 
     expect(reponse.status).toBe(200);
     expect(await reponse.json()).toMatchObject({ dejaSuivi: true });
+    expect((await lister(cookie)).produits).toHaveLength(1);
+  });
+
+  it("répond « déjà suivi » au second de deux ajouts simultanés du même produit", async () => {
+    const { cookie } = await connecterUtilisateur();
+
+    const reponses = await Promise.all([ajouter(cookie, "1400"), ajouter(cookie, "1400")]);
+
+    expect(reponses.map((reponse) => reponse.status).sort()).toEqual([200, 201]);
     expect((await lister(cookie)).produits).toHaveLength(1);
   });
 
@@ -290,4 +308,14 @@ it.each([
   const reponse = await appeler(chemin, { methode });
 
   expect(reponse.status).toBe(401);
+});
+
+it("la base n'accepte que les types de produits suivis", async () => {
+  for (const type of TYPES_PRODUIT) {
+    await env.DB.prepare("INSERT INTO produits (app_id, type, nom) VALUES (?, ?, 'Test')").bind(5_000_000 + TYPES_PRODUIT.indexOf(type), type).run();
+  }
+
+  await expect(
+    env.DB.prepare("INSERT INTO produits (app_id, type, nom) VALUES (5000100, 'pack', 'Test')").run(),
+  ).rejects.toThrow();
 });
