@@ -1,6 +1,7 @@
 import { env } from "cloudflare:test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { appeler, ORIGINE } from "./outils.js";
+import { simulerSteam } from "./steam-simule.js";
 
 const STEAM_ID = "76561197960287930";
 const CINQ_MINUTES = 5 * 60 * 1000;
@@ -17,17 +18,7 @@ beforeEach(() => {
       },
     },
   };
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async (adresse) => {
-      const url = String(adresse);
-      if (url === "https://steamcommunity.com/openid/login") return new Response(reponsesSteam.verification);
-      if (url.startsWith("https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/")) {
-        return Response.json(reponsesSteam.profil);
-      }
-      throw new Error(`Requête inattendue : ${url}`);
-    }),
-  );
+  vi.stubGlobal("fetch", simulerSteam(reponsesSteam));
 });
 
 afterEach(() => {
@@ -73,9 +64,9 @@ async function demarrerConnexion() {
   return { reponse, cookieEtat, etat: cookieEtat.split("=")[1] };
 }
 
-async function seConnecter() {
+async function seConnecter(modifications = {}) {
   const { cookieEtat, etat } = await demarrerConnexion();
-  const reponse = await appeler(retourSteam(etat), { cookies: [cookieEtat] });
+  const reponse = await appeler(retourSteam(etat, modifications), { cookies: [cookieEtat] });
   const cookieSession = cookiesPoses(reponse).find((cookie) => cookie.startsWith("ud_session="));
   return { reponse, cookieSession };
 }
@@ -134,6 +125,18 @@ describe("connexion via Steam", () => {
     expect(reponse.headers.get("Location")).toBe("/connexion?erreur=steam");
     expect(fetch).not.toHaveBeenCalled();
   });
+});
+
+it("importe la liste de souhaits à la première connexion", async () => {
+  const nouveau = "76561197960287999";
+  const identite = `https://steamcommunity.com/openid/id/${nouveau}`;
+  reponsesSteam.souhaits = { [nouveau]: [620] };
+  reponsesSteam.fiches = { 620: { type: "game", name: "Portal 2" } };
+
+  await seConnecter({ "openid.claimed_id": identite, "openid.identity": identite });
+
+  const suivi = await env.DB.prepare("SELECT app_id, souhait FROM suivis WHERE steam_id = ?").bind(nouveau).first();
+  expect(suivi).toEqual({ app_id: 620, souhait: 1 });
 });
 
 describe("GET /api/moi", () => {

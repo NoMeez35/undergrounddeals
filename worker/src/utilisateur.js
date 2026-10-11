@@ -3,11 +3,11 @@ import { json } from "./reponses.js";
 import { creerCookieSession, lireSession } from "./session.js";
 import { lireProfilSteam } from "./steam-profil.js";
 
-// Renvoie l'utilisateur de la session (SteamID, pays, langue), ou null.
+// Renvoie l'utilisateur de la session (sa ligne de la table utilisateurs), ou null.
 export async function utilisateurConnecte(request, env) {
   const steamId = await lireSession(request, env.SESSION_SECRET);
   if (!steamId) return null;
-  return env.DB.prepare("SELECT steam_id, pays, langue FROM utilisateurs WHERE steam_id = ?")
+  return env.DB.prepare("SELECT * FROM utilisateurs WHERE steam_id = ?")
     .bind(steamId)
     .first();
 }

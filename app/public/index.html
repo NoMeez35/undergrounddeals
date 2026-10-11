@@ -50,6 +50,16 @@
         <p id="prix-indisponibles" class="erreur" data-texte="suivis.prixIndisponibles" hidden></p>
         <ul id="liste-suivis" role="tabpanel"></ul>
         <p id="liste-vide" hidden></p>
+
+        <section id="souhaits-prives" class="encart" hidden>
+          <p data-texte="souhaits.prives"></p>
+          <a href="https://steamcommunity.com/my/edit/settings" target="_blank" rel="noopener" data-texte="souhaits.lienConfidentialite"></a>
+          <button id="relire-souhaits" class="bouton secondaire" type="button" data-texte="souhaits.relire"></button>
+          <p id="message-souhaits" role="status" hidden></p>
+        </section>
+
+        <h3 id="titre-non-suivis" data-texte="souhaits.nonSuivis" hidden></h3>
+        <ul id="liste-non-suivis"></ul>
       </section>
 
       <!-- Choix de la langue et du pays : à la première connexion, puis dans les Réglages.

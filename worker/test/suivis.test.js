@@ -2,6 +2,7 @@ import { env } from "cloudflare:test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TYPES_PRODUIT } from "../../app/public/suivis.js";
 import { appeler, connecterUtilisateur } from "./outils.js";
+import { simulerSteam } from "./steam-simule.js";
 
 // Boutique Steam simulée : fiches des produits et prix par pays.
 const FICHES = {
@@ -9,7 +10,7 @@ const FICHES = {
   378648: { type: "dlc", name: "The Witcher 3: Wild Hunt - Blood and Wine" },
   323180: { type: "music", name: "Portal 2 Soundtrack" },
   // Ancien AppID que Steam redirige vers un autre.
-  400: { type: "game", name: "Portal", steam_appid: 401 },
+  400: { type: "game", name: "Portal", appid: 401 },
   // Jamais ajouté ailleurs : sa fiche n'est connue que de Steam.
   730: { type: "game", name: "Counter-Strike 2" },
   // DLC gratuit : un DLC suivi est payant.
@@ -38,37 +39,11 @@ const PRIX = {
   US: { 620: prix("USD", 999) },
 };
 
-let steamEnPanne;
-let requetesBoutique;
+let steam;
 
 beforeEach(() => {
-  steamEnPanne = false;
-  requetesBoutique = [];
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async (adresse) => {
-      const url = new URL(String(adresse));
-      if (url.origin + url.pathname !== "https://store.steampowered.com/api/appdetails") {
-        throw new Error(`Requête inattendue : ${url}`);
-      }
-      requetesBoutique.push(url);
-      if (steamEnPanne) return new Response("", { status: 503 });
-
-      const pays = url.searchParams.get("cc").toUpperCase();
-      const reponse = {};
-      for (const appId of url.searchParams.get("appids").split(",")) {
-        const fiche = FICHES[appId];
-        if (!fiche) reponse[appId] = { success: false };
-        else if (url.searchParams.get("filters") === "price_overview") {
-          const prixPays = PRIX[pays]?.[appId];
-          reponse[appId] = { success: true, data: prixPays ? { price_overview: prixPays } : [] };
-        } else {
-          reponse[appId] = { success: true, data: { steam_appid: Number(appId), ...fiche } };
-        }
-      }
-      return Response.json(reponse);
-    }),
-  );
+  steam = { fiches: FICHES, prix: PRIX };
+  vi.stubGlobal("fetch", simulerSteam(steam));
 });
 
 afterEach(() => {
@@ -176,7 +151,7 @@ describe("ajout manuel", () => {
 
   it("répond 502 si Steam ne répond pas pour un produit encore inconnu", async () => {
     const { cookie } = await connecterUtilisateur();
-    steamEnPanne = true;
+    steam.enPanne = true;
 
     const reponse = await ajouter(cookie, "730");
 
@@ -246,7 +221,7 @@ describe("Mes suivis", () => {
 
     const { produits } = await lister(cookie);
     expect(produits[0].prix).toMatchObject({ actuel: "9.99 USD" });
-    expect(requetesBoutique.at(-1).searchParams.get("cc")).toBe("US");
+    expect(steam.requetes.at(-1).searchParams.get("cc")).toBe("US");
   });
 
   it("indique un produit sans prix dans le pays", async () => {
@@ -261,7 +236,7 @@ describe("Mes suivis", () => {
   it("liste les produits sans prix si Steam ne répond pas", async () => {
     const { cookie } = await connecterUtilisateur();
     await ajouter(cookie, "620");
-    steamEnPanne = true;
+    steam.enPanne = true;
 
     const suivis = await lister(cookie);
 
@@ -273,12 +248,12 @@ describe("Mes suivis", () => {
     const { cookie } = await connecterUtilisateur();
     await ajouter(cookie, "620");
     await ajouter(cookie, "378648");
-    requetesBoutique = [];
+    steam.requetes = [];
 
     await lister(cookie);
 
-    expect(requetesBoutique).toHaveLength(1);
-    expect(requetesBoutique[0].searchParams.get("appids").split(",").sort()).toEqual(["378648", "620"]);
+    expect(steam.requetes).toHaveLength(1);
+    expect(steam.requetes[0].searchParams.get("appids").split(",").sort()).toEqual(["378648", "620"]);
   });
 
   it("retire un produit", async () => {

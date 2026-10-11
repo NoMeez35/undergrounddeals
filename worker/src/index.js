@@ -1,14 +1,17 @@
-// Aiguillage des requêtes de l'API vers les modules qui les traitent.
+// Aiguillage des requêtes de l'API vers les modules qui les traitent, et
+// passages planifiés (voir `triggers` dans worker/wrangler.jsonc).
 import { CHEMIN_CONNEXION_STEAM } from "../../app/public/chemins.js";
 import { CHEMIN_RETOUR_STEAM, deconnecter, demarrerConnexion, terminerConnexion } from "./connexion.js";
 import { enregistrerReglages } from "./reglages.js";
 import { json } from "./reponses.js";
+import { relireSouhaits, suivreSouhait, synchroniserLesListesEnRetard } from "./souhaits.js";
 import { ajouterSuivi, listerSuivis, retirerSuivi } from "./suivis.js";
 import { renvoyerProfil, utilisateurConnecte } from "./utilisateur.js";
 
-// Route d'un produit suivi : `:appId` est l'AppID lu par CHEMIN_SUIVI.
+// Routes d'un produit : `:appId` est l'AppID lu par CHEMIN_PRODUIT.
 const ROUTE_SUIVI = "/api/suivis/:appId";
-const CHEMIN_SUIVI = /^\/api\/suivis\/(\d{1,10})$/;
+const ROUTE_SOUHAIT = "/api/souhaits/:appId";
+const CHEMIN_PRODUIT = /^\/api\/(suivis|souhaits)\/(\d{1,10})$/;
 
 // Routes ouvertes à tous.
 const ROUTES_PUBLIQUES = {
@@ -24,13 +27,16 @@ const ROUTES_CONNECTEES = {
   "GET /api/suivis": listerSuivis,
   "POST /api/suivis": ajouterSuivi,
   [`DELETE ${ROUTE_SUIVI}`]: retirerSuivi,
+  "POST /api/souhaits/relire": relireSouhaits,
+  [`POST ${ROUTE_SOUHAIT}`]: suivreSouhait,
 };
 
 // Clé de route de la requête, et l'AppID quand le chemin en contient un.
 function lireRoute(request, url) {
-  const suivi = url.pathname.match(CHEMIN_SUIVI);
-  if (suivi) return { route: `${request.method} ${ROUTE_SUIVI}`, appId: Number(suivi[1]) };
-  return { route: `${request.method} ${url.pathname}` };
+  const produit = url.pathname.match(CHEMIN_PRODUIT);
+  if (!produit) return { route: `${request.method} ${url.pathname}` };
+  const route = produit[1] === "suivis" ? ROUTE_SUIVI : ROUTE_SOUHAIT;
+  return { route: `${request.method} ${route}`, appId: Number(produit[2]) };
 }
 
 export default {
@@ -45,5 +51,9 @@ export default {
     const utilisateur = await utilisateurConnecte(request, env);
     if (!utilisateur) return json({ erreur: "nonConnecte" }, { status: 401 });
     return ROUTES_CONNECTEES[route]({ ...contexte, utilisateur });
+  },
+
+  async scheduled(_controleur, env, ctx) {
+    ctx.waitUntil(synchroniserLesListesEnRetard(env));
   },
 };

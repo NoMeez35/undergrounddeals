@@ -4,7 +4,7 @@ Appli gratuite et open source qui surveille les jeux et DLC Steam qui vous inté
 
 Elle pourra s'installer sur PC et téléphone comme une application (PWA) et se connectera avec votre compte Steam.
 
-> En construction : on peut déjà se connecter via Steam, choisir sa langue et son pays, et suivre des jeux et DLC ajoutés à la main avec leur prix. Les alertes arrivent dans les prochaines versions.
+> En construction : on peut déjà se connecter via Steam, choisir sa langue et son pays, et suivre, avec leur prix, des jeux et DLC ajoutés à la main ou importés de la liste de souhaits Steam. Les alertes arrivent dans les prochaines versions.
 
 ## Comment c'est fait
 
@@ -13,7 +13,7 @@ Tout est hébergé sur Cloudflare, en offre gratuite :
 | Partie | Dossier | Rôle |
 |---|---|---|
 | Appli (Cloudflare Pages) | `app/` | Les pages affichées dans le navigateur. Les requêtes `/api/…` sont relayées au serveur. |
-| Serveur (Cloudflare Worker) | `worker/` | L'API et la connexion via Steam ; plus tard, la vérification horaire des prix et l'envoi des alertes. |
+| Serveur (Cloudflare Worker) | `worker/` | L'API, la connexion via Steam et la synchronisation des listes de souhaits ; plus tard, la vérification horaire des prix et l'envoi des alertes. |
 | Base de données (Cloudflare D1) | `worker/migrations/` | Les fichiers SQL qui créent et font évoluer la base, appliqués dans l'ordre. |
 
 Les choix structurants sont expliqués dans `docs/adr/` et le vocabulaire dans `GLOSSARY.md`.

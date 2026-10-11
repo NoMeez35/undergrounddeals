@@ -6,6 +6,8 @@
   // Joignable uniquement par l'appli, via la liaison de service `API`.
   "workers_dev": false,
   "preview_urls": false,
+  // Passage planifié toutes les 10 minutes : synchronisation des listes de souhaits.
+  "triggers": { "crons": ["*/10 * * * *"] },
   "d1_databases": [
     {
       "binding": "DB",

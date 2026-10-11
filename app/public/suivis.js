@@ -1,8 +1,8 @@
 // Partagé par l'appli et le Worker : règles des produits suivis.
 
 // Types de produits suivis, comptés séparément dans la limite de suivi, et le
-// type correspondant dans la boutique Steam.
-export const TYPE_STEAM = { jeu: "game", dlc: "dlc" };
+// type correspondant dans la boutique Steam (champ `type` de GetItems).
+export const TYPE_STEAM = { jeu: 0, dlc: 4 };
 export const TYPES_PRODUIT = Object.keys(TYPE_STEAM);
 
 // Limite de suivi, par type (voir GLOSSARY.md).
