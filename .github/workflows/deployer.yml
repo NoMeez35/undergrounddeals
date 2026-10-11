@@ -45,4 +45,4 @@ jobs:
         run: npx wrangler deploy --config worker/wrangler.jsonc --secrets-file worker/.secrets.json
       - name: Déployer l'appli
         working-directory: app
-        run: npx wrangler pages deploy --project-name undergrounddeals --branch main --commit-hash ${{ github.sha }}
+        run: npx wrangler pages deploy --branch main --commit-hash ${{ github.sha }}

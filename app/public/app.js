@@ -1,29 +1,29 @@
-const CHEMIN_CONNEXION = "/connexion";
+import { CHEMIN_CONNEXION, ERREUR_CONNEXION_STEAM } from "/chemins.js";
 
-const element = (id) => document.getElementById(id);
+const elementParId = (id) => document.getElementById(id);
 
 function afficher(ecran) {
-  element("chargement").hidden = true;
-  element("ecran-connexion").hidden = ecran !== "connexion";
-  element("ecran-accueil").hidden = ecran !== "accueil";
+  elementParId("chargement").hidden = true;
+  elementParId("ecran-connexion").hidden = ecran !== "connexion";
+  elementParId("ecran-accueil").hidden = ecran !== "accueil";
 }
 
 function afficherConnexion() {
   const parametres = new URLSearchParams(location.search);
-  element("erreur-connexion").hidden = parametres.get("erreur") !== "steam";
+  elementParId("erreur-connexion").hidden = parametres.get("erreur") !== ERREUR_CONNEXION_STEAM;
   afficher("connexion");
 }
 
 function afficherAccueil({ steamId, nom, avatar }) {
-  element("nom").textContent = nom ?? steamId;
+  elementParId("nom").textContent = nom ?? steamId;
   if (avatar) {
-    element("avatar").src = avatar;
-    element("avatar").hidden = false;
+    elementParId("avatar").src = avatar;
+    elementParId("avatar").hidden = false;
   }
   afficher("accueil");
 }
 
-element("deconnexion").addEventListener("click", async () => {
+elementParId("deconnexion").addEventListener("click", async () => {
   await fetch("/api/deconnexion", { method: "POST" });
   location.replace(CHEMIN_CONNEXION);
 });
@@ -41,5 +41,5 @@ try {
     afficherAccueil(await reponse.json());
   }
 } catch (erreur) {
-  element("chargement").textContent = `Le serveur ne répond pas (${erreur.message}).`;
+  elementParId("chargement").textContent = `Le serveur ne répond pas (${erreur.message}).`;
 }

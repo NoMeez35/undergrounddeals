@@ -1,0 +1,3 @@
+# Écrans de l'appli : servis par index.html, qui affiche le bon écran.
+# Tout autre chemin inconnu reçoit 404.html avec le code 404.
+/connexion /index.html 200

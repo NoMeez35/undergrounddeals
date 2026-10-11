@@ -4,6 +4,7 @@ import worker from "../src/index.js";
 
 const ORIGINE = "https://exemple.test";
 const STEAM_ID = "76561197960287930";
+const CINQ_MINUTES = 5 * 60 * 1000;
 const CHAMPS_SIGNES = "signed,op_endpoint,claimed_id,identity,return_to,response_nonce,assoc_handle";
 
 let reponsesSteam;
@@ -40,6 +41,11 @@ function cookiesPoses(reponse) {
   return reponse.headers.getSetCookie().map((cookie) => cookie.split(";")[0]);
 }
 
+// Nonce OpenID : date de la réponse de Steam suivie d'un suffixe aléatoire.
+function nonce(date = new Date()) {
+  return `${date.toISOString().slice(0, 19)}Z${Math.random().toString(36).slice(2)}`;
+}
+
 function retourSteam(etat, modifications = {}) {
   const retour = `${ORIGINE}/api/auth/steam/retour?etat=${etat}`;
   const parametres = new URLSearchParams({
@@ -50,7 +56,7 @@ function retourSteam(etat, modifications = {}) {
     "openid.claimed_id": `https://steamcommunity.com/openid/id/${STEAM_ID}`,
     "openid.identity": `https://steamcommunity.com/openid/id/${STEAM_ID}`,
     "openid.return_to": retour,
-    "openid.response_nonce": "2026-10-11T00:00:00Zabc",
+    "openid.response_nonce": nonce(),
     "openid.assoc_handle": "1234567890",
     "openid.signed": CHAMPS_SIGNES,
     "openid.sig": "signature",
@@ -115,6 +121,8 @@ describe("connexion via Steam", () => {
     ["l'identité n'est pas couverte par la signature", { "openid.signed": "signed,op_endpoint,return_to" }],
     ["le fournisseur n'est pas Steam", { "openid.op_endpoint": "https://pirate.test/openid/login" }],
     ["l'adresse de retour a été modifiée", { "openid.return_to": "https://pirate.test/retour" }],
+    ["l'identité diffère de l'identité revendiquée", { "openid.identity": "https://steamcommunity.com/openid/id/76561197960287931" }],
+    ["la réponse de Steam date de plus de 5 minutes", { "openid.response_nonce": nonce(new Date(Date.now() - CINQ_MINUTES - 1000)) }],
     ["l'identité n'est pas un compte Steam", { "openid.claimed_id": "https://pirate.test/id/1", "openid.identity": "https://pirate.test/id/1" }],
   ])("refuse une réponse falsifiée : %s", async (_cas, modifications) => {
     const { cookieEtat, etat } = await demarrerConnexion();

@@ -10,7 +10,7 @@
     {
       "binding": "DB",
       "database_name": "undergrounddeals",
-      // Identifiant fictif : scripts/preparer-cloudflare.mjs (ID_FICTIF) y écrit le vrai au déploiement.
+      // Identifiant fictif : scripts/preparer-cloudflare.mjs y écrit le vrai au déploiement.
       "database_id": "00000000-0000-0000-0000-000000000000",
       "migrations_dir": "migrations"
     }

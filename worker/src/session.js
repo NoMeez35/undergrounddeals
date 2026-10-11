@@ -1,5 +1,10 @@
 // Session sans stockage : un cookie signé (HMAC) qui contient le SteamID et sa
 // date d'expiration. Rien d'autre que le SteamID n'est conservé côté serveur.
+// Limite : se déconnecter efface le cookie du navigateur, mais une copie volée
+// du cookie resterait valable jusqu'à son expiration.
+import { enteteCookie, enteteCookieSupprime, lireCookie } from "./cookies.js";
+import { lireSteamId } from "./steam-id.js";
+
 const NOM_COOKIE = "ud_session";
 const DUREE_SECONDES = 30 * 24 * 60 * 60;
 
@@ -27,19 +32,6 @@ function cleHmac(secret) {
   );
 }
 
-export function lireCookie(request, nom) {
-  const entete = request.headers.get("Cookie") ?? "";
-  for (const morceau of entete.split(";")) {
-    const [cle, ...valeur] = morceau.trim().split("=");
-    if (cle === nom) return valeur.join("=");
-  }
-  return null;
-}
-
-export function enteteCookie(nom, valeur, { chemin = "/", dureeSecondes }) {
-  return `${nom}=${valeur}; Path=${chemin}; Max-Age=${dureeSecondes}; HttpOnly; Secure; SameSite=Lax`;
-}
-
 export async function creerCookieSession(steamId, secret, maintenant = Date.now()) {
   const contenu = `${steamId}.${Math.floor(maintenant / 1000) + DUREE_SECONDES}`;
   const signature = await crypto.subtle.sign("HMAC", await cleHmac(secret), encodeur.encode(contenu));
@@ -49,7 +41,7 @@ export async function creerCookieSession(steamId, secret, maintenant = Date.now(
 }
 
 export function cookieSessionSupprime() {
-  return enteteCookie(NOM_COOKIE, "", { dureeSecondes: 0 });
+  return enteteCookieSupprime(NOM_COOKIE);
 }
 
 // Renvoie le SteamID de la session, ou null si elle est absente, falsifiée ou expirée.
@@ -71,5 +63,5 @@ export async function lireSession(request, secret, maintenant = Date.now()) {
     encodeur.encode(`${steamId}.${expiration}`),
   );
   if (!valide || Number(expiration) * 1000 <= maintenant) return null;
-  return steamId;
+  return lireSteamId(steamId);
 }
