@@ -9,7 +9,7 @@ Le porteur du projet crée les comptes nécessaires, guidé pas à pas par l'age
 
 ## Critères d'acceptation
 
-- [ ] Compte GitHub créé, dépôt public `undergrounddeals` créé avec la licence MIT.
+- [x] Compte GitHub créé, dépôt public `undergrounddeals` créé avec la licence MIT.
 - [ ] Compte Cloudflare (offre gratuite) créé, sans moyen de paiement enregistré.
 - [ ] Jeton d'API Cloudflare et identifiant de compte enregistrés comme secrets du dépôt GitHub.
 - [ ] Clé d'API Steam Web (gratuite) obtenue et enregistrée comme secret.
@@ -27,3 +27,4 @@ Le porteur du projet crée les comptes nécessaires, guidé pas à pas par l'age
 - 2026-10-11 : étapes de création du compte GitHub données à l'utilisateur (inscription, double authentification, e-mail masqué). En attente de son nom d'utilisateur et de son adresse noreply.
 - 2026-10-11 : compte GitHub déjà existant : `NoMeez35`, noreply `262562210+NoMeez35@users.noreply.github.com`. Double authentification activée. Dépôt public conservé, à condition que les versions futures n'y soient jamais visibles : elles sont déplacées dans `futur/` (dépôt privé) et l'historique local est reconstruit sans elles avant le premier push.
 
+- 2026-10-11 : dépôts poussés. `NoMeez35/undergrounddeals` (public, MIT) et `NoMeez35/undergrounddeals-futur` (privé). Le PC a aussi un autre compte GitHub enregistré (`blknomeez-ai`) : les URL des remotes précisent `NoMeez35@` pour forcer le bon compte. Étape suivante : Cloudflare.
