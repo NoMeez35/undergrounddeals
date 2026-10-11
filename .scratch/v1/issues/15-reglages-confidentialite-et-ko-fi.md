@@ -12,3 +12,6 @@ Compléter l'écran Réglages : bouton « Supprimer mon compte », lien vers une
 - [ ] « Supprimer mon compte » demande une confirmation puis efface toutes les données de l'utilisateur (produits suivis, prix cibles, alertes, abonnements push, session).
 - [ ] La page de confidentialité liste les données stockées, pourquoi, et comment les supprimer.
 - [ ] Le bouton Ko-fi ouvre la page Ko-fi (lien noté dans le ticket 01) ; il est masqué si aucun lien n'est configuré.
+
+## Comments
+- 2026-10-11 (relecture) : en plus des données listées dans la spec, la date d'ajout de chaque produit suivi est stockée (`suivis.ajoute_le`, sert à l'ordre de la liste) ; la page de confidentialité doit la citer. La suppression des suivis à la suppression du compte est déjà assurée par `ON DELETE CASCADE`.

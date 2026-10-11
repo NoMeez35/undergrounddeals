@@ -14,3 +14,6 @@ Blocked by: 05
 - [ ] Un produit retiré de la liste de souhaits n'est plus suivi, sauf s'il a aussi été ajouté à la main.
 - [ ] Les packs de la liste de souhaits sont ignorés.
 - [ ] Si le profil est privé, l'appli explique comment rendre la liste de souhaits visible ; l'ajout manuel reste possible.
+
+## Comments
+- 2026-10-11 (relecture) : la table `suivis` n'a pas de colonne de provenance. L'ajouter (liste de souhaits, ajout manuel, ou les deux) pour qu'un produit retiré de la liste de souhaits reste suivi s'il a aussi été ajouté à la main. Aujourd'hui, l'ajout manuel d'un produit déjà suivi répond `dejaSuivi` sans rien enregistrer : il devra marquer la provenance manuelle.
