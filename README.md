@@ -2,7 +2,7 @@
 
 Appli gratuite et open source qui surveille les jeux et DLC Steam qui vous intéressent et vous prévient des promos, des plus bas historiques, des sorties et des démos.
 
-Elle s'installe sur PC et téléphone comme une application (PWA) et se connecte avec votre compte Steam.
+Elle pourra s'installer sur PC et téléphone comme une application (PWA) et se connectera avec votre compte Steam.
 
 > En construction : seule une page de test est en ligne pour l'instant.
 

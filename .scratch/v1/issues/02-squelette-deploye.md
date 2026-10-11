@@ -18,3 +18,4 @@ Mettre en place le dépôt, une PWA vide, un Worker, une base D1 et le déploiem
 ## Comments
 
 - 2026-10-11 : en ligne sur https://undergrounddeals.pages.dev (`/api/statut` renvoie le message lu en D1). Architecture : Cloudflare Pages (`app/`) dont la fonction `/api/*` relaie au Worker `undergrounddeals-api` (`worker/`, sans adresse publique) par liaison de service ; base D1 `undergrounddeals` (région weur), créée par `scripts/preparer-cloudflare.mjs` qui injecte son identifiant au déploiement. Le job `deployer` dépend du job `tests`. Les tâches planifiées (ticket 07) iront dans le Worker.
+- 2026-10-11 : relecture. La page n'est pas encore installable (ni manifeste, ni service worker, ni icônes) : laissé au ticket 13 ; le README ne promet plus l'installation.
