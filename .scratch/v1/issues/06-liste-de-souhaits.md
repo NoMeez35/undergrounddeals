@@ -1,6 +1,6 @@
 # Import et synchronisation de la liste de souhaits
 
-Status: claimed
+Status: resolved
 Blocked by: 05
 
 ## Quoi
@@ -33,3 +33,4 @@ Blocked by: 05
   - Les packs n'apparaissent jamais : une liste de souhaits Steam ne contient que des AppID.
   - Liste vidée : Steam répond comme pour une liste privée, compteur `GetWishlistItemCount` compris. Piste non vérifiée : `IPlayerService/GetOwnedGames` (avec la clé) indique si les détails des jeux, dont dépend la liste, sont publics. Comportement gardé : ne rien retirer.
   - Risque accepté : entre « Retirer » et « Suivre », la synchronisation peut occuper la place libérée ; le clic répond alors « limite atteinte », avec l'invitation à libérer une place.
+- 2026-10-11 : test manuel réussi par le porteur du projet (import de la liste de souhaits, retrait puis « Suivre »). Ticket clos.
