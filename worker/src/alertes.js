@@ -1,13 +1,13 @@
 // Fil d'alertes d'un utilisateur. Les alertes sont créées par le relevé des
 // prix (worker/src/releve.js).
 import { EVENEMENTS } from "../../app/public/alertes.js";
-import { json } from "./reponses.js";
+import { json, montantsVersJson } from "./reponses.js";
 
 // Nombre d'alertes renvoyées : les plus récentes.
 const TAILLE_DU_FIL = 100;
 
-// Événement → colonne de la table alertes qui le signale.
-const COLONNES_EVENEMENTS = { [EVENEMENTS.debutPromo]: "debut_promo" };
+// Événement → colonne de la table alertes qui le signale (le relevé y écrit 1).
+export const COLONNES_EVENEMENTS = { [EVENEMENTS.debutPromo]: "debut_promo" };
 
 function alerteVersJson(ligne) {
   return {
@@ -18,7 +18,7 @@ function alerteVersJson(ligne) {
     appId: ligne.app_id,
     nom: ligne.nom,
     creeLe: ligne.cree_le,
-    prix: { actuel: ligne.prix_affiche, initial: ligne.prix_initial_affiche, reduction: ligne.reduction },
+    prix: montantsVersJson(ligne),
   };
 }
 

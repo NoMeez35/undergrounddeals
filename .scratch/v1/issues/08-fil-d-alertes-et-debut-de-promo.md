@@ -25,3 +25,9 @@ Premier type d'alerte de bout en bout : quand un relevé détecte qu'une promo c
   - Coût : une requête de plus par paquet de 100 produits, donc 7 paquets par passage au lieu de 9, soit 8 400 couples (produit, pays) par heure.
   - Fil d'alertes : les 100 plus récentes, lien depuis Mes suivis.
   - En attente du test manuel du porteur du projet.
+- 2026-10-12 : test manuel de l'écran réussi (bouton, fil vide, retour, anglais) ; une vraie alerte reste à observer. Corrections après relecture :
+  - Les alertes partent des lignes que le relevé vient d'ajouter à l'historique (`apres_interruption = 0`), comme le demandait la relecture du ticket 07.
+  - L'état précédent ignore les relevés sans prix : un prix que Steam omet une fois en pleine promo ne crée plus de seconde alerte.
+  - Tests ajoutés : produit plus en vente ou retiré de Steam, utilisateur qui quitte le pays, prix omis pendant la promo, promo après une période sans prix.
+  - Mise en forme des prix partagée (`montantsVersJson`), colonne d'événement lue dans `COLONNES_EVENEMENTS`, test des textes renommé `app/test/interface.test.js`.
+  - Gardé : le fil montre les 100 alertes les plus récentes, pour que l'écran reste rapide.

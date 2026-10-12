@@ -17,3 +17,9 @@ export function redirection(adresse, cookies = []) {
   for (const cookie of cookies) entetes.append("Set-Cookie", cookie);
   return new Response(null, { status: 302, headers: entetes });
 }
+
+// Montants mis en forme par Steam d'une ligne de prix (colonnes prix_affiche,
+// prix_initial_affiche, reduction), tels que l'appli les affiche.
+export function montantsVersJson(ligne) {
+  return { actuel: ligne.prix_affiche, initial: ligne.prix_initial_affiche, reduction: ligne.reduction };
+}

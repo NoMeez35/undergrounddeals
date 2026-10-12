@@ -15,7 +15,9 @@
 // shortcut: au-delà d'environ 8 000 couples, un relevé dure plus d'une heure
 // (il continue là où il s'était arrêté) ; passer à l'offre payante (1 000
 // requêtes par passage) et augmenter BUDGET_REQUETES.
+import { EVENEMENTS } from "../../app/public/alertes.js";
 import { ETATS_PRIX } from "../../app/public/suivis.js";
+import { COLONNES_EVENEMENTS } from "./alertes.js";
 import { lireFichesSteam, lirePrixSteam, SteamIndisponible, TAILLE_PAQUET } from "./steam-boutique.js";
 
 const BUDGET_REQUETES = 46;
@@ -60,7 +62,8 @@ export function jourDeLaVeille(date = new Date()) {
 const sqlPerime = (ligne) => `(${ligne}.vu_le IS NULL OR ${ligne}.vu_le < ?4)`;
 
 // Relève un paquet de produits dans un pays, enregistre ce qui a changé et crée
-// les alertes des utilisateurs du pays qui suivent ces produits. Lève SteamIndisponible si Steam ne répond pas.
+// les alertes des utilisateurs du pays qui suivent ces produits. Lève
+// SteamIndisponible si Steam ne répond pas.
 async function releverPaquet(env, appIds, pays, maintenant) {
   const prix = await lirePrixSteam(appIds, pays);
   const sansPrix = appIds.filter((appId) => !prix.get(appId));
@@ -81,8 +84,8 @@ async function releverPaquet(env, appIds, pays, maintenant) {
   const veille = jourDeLaVeille(new Date(maintenant));
   const json = JSON.stringify(releves);
   await env.DB.batch([
-    // L'historique et les alertes d'abord : ils comparent avec le prix connu
-    // avant sa mise à jour.
+    // L'historique d'abord : il compare avec le prix connu avant sa mise à
+    // jour, et les alertes partent de ses nouvelles lignes.
     env.DB.prepare(
       `INSERT INTO historique_prix (app_id, pays, releve_le, etat, devise, prix, prix_initial, reduction, apres_interruption)
        SELECT r.app_id, ?2, ?3, r.etat, r.devise, r.prix, r.prix_initial, r.reduction,
@@ -90,21 +93,32 @@ async function releverPaquet(env, appIds, pays, maintenant) {
          FROM (${SQL_RELEVES}) r LEFT JOIN prix px ON px.app_id = r.app_id AND px.pays = ?2
         WHERE px.app_id IS NULL OR ${sqlPerime("px")} OR ${sqlPrixChange("px", "r")}`,
     ).bind(json, pays, maintenant, veille),
-    // Début de promo : le produit est réduit alors que son prix connu, encore à
-    // jour, ne l'était pas (pas en vente, ou sans réduction). Un premier relevé
-    // ou une reprise après interruption n'est pas un changement observé : il
-    // n'alerte pas, ce qui évite les alertes rétroactives après un changement
-    // de pays.
+    // Début de promo : un changement que ce relevé vient d'ajouter à
+    // l'historique rend le produit réduit, alors que son état précédent ne
+    // l'était pas (pas en vente, ou sans réduction). Seul un produit en vente
+    // est réduit : rien pour un produit gratuit, sans prix ou retiré de Steam.
+    // Une ligne après interruption (premier relevé, prix périmé) n'est pas un
+    // changement observé : elle n'alerte pas, ce qui évite les alertes
+    // rétroactives après un changement de pays. L'état précédent ignore les
+    // relevés sans prix : un prix que Steam omet une fois en pleine promo ne
+    // fait pas croire à une nouvelle promo.
     env.DB.prepare(
-      `INSERT INTO alertes (steam_id, app_id, cree_le, debut_promo, prix_affiche, prix_initial_affiche, reduction)
-       SELECT s.steam_id, r.app_id, ?3, 1, r.prix_affiche, r.prix_initial_affiche, r.reduction
-         FROM (${SQL_RELEVES}) r
-         JOIN prix px ON px.app_id = r.app_id AND px.pays = ?2
-         JOIN suivis s ON s.app_id = r.app_id
+      `INSERT INTO alertes (steam_id, app_id, cree_le, ${COLONNES_EVENEMENTS[EVENEMENTS.debutPromo]}, prix_affiche, prix_initial_affiche, reduction)
+       SELECT s.steam_id, h.app_id, ?3, 1, r.prix_affiche, r.prix_initial_affiche, r.reduction
+         FROM historique_prix h
+         JOIN (${SQL_RELEVES}) r ON r.app_id = h.app_id
+         JOIN suivis s ON s.app_id = h.app_id
          JOIN utilisateurs u ON u.steam_id = s.steam_id AND u.pays = ?2
-        WHERE r.etat = '${ETATS_PRIX.enVente}' AND r.reduction > 0 AND NOT ${sqlPerime("px")}
-          AND NOT (px.etat = '${ETATS_PRIX.enVente}' AND px.reduction > 0)`,
-    ).bind(json, pays, maintenant, veille),
+        WHERE h.pays = ?2 AND h.releve_le = ?3 AND h.apres_interruption = 0
+          AND h.etat = '${ETATS_PRIX.enVente}' AND h.reduction > 0
+          AND NOT coalesce(
+            (SELECT avant.etat = '${ETATS_PRIX.enVente}' AND avant.reduction > 0
+               FROM historique_prix avant
+              WHERE avant.app_id = h.app_id AND avant.pays = ?2 AND avant.releve_le < ?3
+                AND avant.etat <> '${ETATS_PRIX.sansPrix}'
+              ORDER BY avant.releve_le DESC LIMIT 1),
+            false)`,
+    ).bind(json, pays, maintenant),
     // Le prix connu n'est réécrit que s'il change, ou une fois par jour pour vu_le.
     env.DB.prepare(
       `INSERT INTO prix (app_id, pays, etat, devise, prix, prix_initial, reduction, prix_affiche, prix_initial_affiche, depuis, vu_le)

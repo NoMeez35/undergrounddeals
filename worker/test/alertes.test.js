@@ -7,6 +7,7 @@ import { prixSteam, simulerSteam } from "./steam-simule.js";
 const FICHES = {
   620: { type: "game", name: "Portal 2" },
   1500: { type: "game", name: "Jeu à venir", release: { is_coming_soon: true } },
+  2108330: { type: "game", name: "F1 23", unlisted: true },
 };
 
 // Relevés successifs, une heure d'écart, à partir de l'heure actuelle (un prix
@@ -51,10 +52,12 @@ async function filDAlertes({ cookie }) {
 }
 
 // Relève les prix à chaque heure donnée, en appliquant avant chaque relevé le
-// prix de 620 en France : [prix, réduction].
+// prix de 620 en France : [prix, réduction], ou SANS_PRIX.
+const SANS_PRIX = null;
 async function releverSuccessivement(prixFrance) {
-  for (const [n, [prix, reduction]] of prixFrance.entries()) {
-    steam.prix.FR[620] = prixSteam("EUR", prix, reduction);
+  for (const [n, releve] of prixFrance.entries()) {
+    if (releve === SANS_PRIX) delete steam.prix.FR[620];
+    else steam.prix.FR[620] = prixSteam("EUR", ...releve);
     await releverLesPrix(env, heure(n));
   }
 }
@@ -157,6 +160,52 @@ describe("alerte de début de promo", () => {
       corps: JSON.stringify({ pays: "US", langue: "fr" }),
     });
     await releverLesPrix(env, heure(2));
+
+    expect(await filDAlertes(voyageur)).toEqual([]);
+  });
+
+  it("ne prévient pas de nouveau quand Steam omet un prix pendant la promo", async () => {
+    const utilisateur = await suivant([620]);
+
+    await releverSuccessivement([[969, 0], [484, 50], SANS_PRIX, [484, 50]]);
+
+    expect(await filDAlertes(utilisateur)).toHaveLength(1);
+  });
+
+  it("prévient quand une promo commence après une période sans prix", async () => {
+    const utilisateur = await suivant([620]);
+
+    await releverSuccessivement([[969, 0], SANS_PRIX, [484, 50]]);
+
+    expect(await filDAlertes(utilisateur)).toHaveLength(1);
+  });
+
+  it("ne prévient pas pour un produit qui n'est plus en vente ou qui est retiré de Steam", async () => {
+    const utilisateur = await suivant([620, 2108330]);
+    steam.prix.FR[2108330] = prixSteam("EUR", 1999);
+    await releverSuccessivement([[969, 0]]);
+    delete steam.prix.FR[620];
+    delete steam.prix.FR[2108330];
+
+    await releverLesPrix(env, heure(1));
+
+    expect(await filDAlertes(utilisateur)).toEqual([]);
+    const { retire_de_steam } = await env.DB.prepare("SELECT retire_de_steam FROM produits WHERE app_id = 2108330").first();
+    expect(retire_de_steam).toBe(1);
+  });
+
+  it("ne prévient pas un utilisateur qui a quitté le pays de la promo", async () => {
+    await suivant([620]);
+    const voyageur = await suivant([620]);
+    await releverSuccessivement([[969, 0]]);
+    await appeler("/api/reglages", {
+      methode: "PUT",
+      cookies: [voyageur.cookie],
+      corps: JSON.stringify({ pays: "US", langue: "fr" }),
+    });
+
+    steam.prix.FR[620] = prixSteam("EUR", 484, 50);
+    await releverLesPrix(env, heure(1));
 
     expect(await filDAlertes(voyageur)).toEqual([]);
   });

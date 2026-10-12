@@ -1,7 +1,7 @@
 // Produits suivis d'un utilisateur : liste avec derniers prix relevés, ajout manuel, retrait.
 import { ERREURS_AJOUT, LIMITE_DE_SUIVI } from "../../app/public/suivis.js";
 import { jourDeLaVeille } from "./releve.js";
-import { json, sansContenu } from "./reponses.js";
+import { json, montantsVersJson, sansContenu } from "./reponses.js";
 import { lireSaisieProduit } from "./saisie-produit.js";
 import { lireFichesSteam, SteamIndisponible } from "./steam-boutique.js";
 import { paysDe } from "./utilisateur.js";
@@ -53,7 +53,7 @@ function produitVersJson({ app_id, type, nom, retire_de_steam }) {
 // Montants mis en forme par Steam ; etat : une valeur de ETATS_PRIX.
 function prixVersJson(ligne) {
   if (!ligne.etat) return null;
-  return { etat: ligne.etat, actuel: ligne.prix_affiche, initial: ligne.prix_initial_affiche, reduction: ligne.reduction };
+  return { etat: ligne.etat, ...montantsVersJson(ligne) };
 }
 
 // Produits suivis, du plus récent au plus ancien (ceux d'un même import dans
