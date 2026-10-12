@@ -47,18 +47,21 @@ afterEach(() => {
 // Utilisateur qui suit les produits donnés (ajoutés directement en base).
 async function suivant(appIds, { pays = "FR" } = {}) {
   const utilisateur = await connecterUtilisateur({ pays });
-  for (const appId of appIds) {
-    const nom = FICHES[appId]?.name ?? `Jeu ${appId}`;
-    const type = FICHES[appId]?.type === "dlc" ? "dlc" : "jeu";
-    await env.DB.batch([
-      env.DB.prepare("INSERT OR IGNORE INTO produits (app_id, type, nom) VALUES (?, ?, ?)").bind(appId, type, nom),
-      env.DB.prepare("INSERT INTO suivis (steam_id, app_id, ajoute_le) VALUES (?, ?, ?)").bind(
-        utilisateur.steamId,
-        appId,
-        new Date().toISOString(),
-      ),
-    ]);
-  }
+  // Un seul lot d'écritures, même pour des centaines de produits.
+  await env.DB.batch(
+    appIds.flatMap((appId) => {
+      const nom = FICHES[appId]?.name ?? `Jeu ${appId}`;
+      const type = FICHES[appId]?.type === "dlc" ? "dlc" : "jeu";
+      return [
+        env.DB.prepare("INSERT OR IGNORE INTO produits (app_id, type, nom) VALUES (?, ?, ?)").bind(appId, type, nom),
+        env.DB.prepare("INSERT INTO suivis (steam_id, app_id, ajoute_le) VALUES (?, ?, ?)").bind(
+          utilisateur.steamId,
+          appId,
+          new Date().toISOString(),
+        ),
+      ];
+    }),
+  );
   return utilisateur;
 }
 
