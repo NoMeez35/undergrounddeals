@@ -92,6 +92,8 @@ function afficherListe() {
   elementParId("titre-non-suivis").hidden = nonSuivis.length === 0;
   elementParId("liste-non-suivis").replaceChildren(...nonSuivis.map(elementNonSuivi));
   elementParId("souhaits-prives").hidden = etatSuivis.souhaitsVisibles !== false;
+  // La colonne de la liste de souhaits n'apparaît que si elle a quelque chose à montrer.
+  elementParId("colonne-souhaits").hidden = nonSuivis.length === 0 && etatSuivis.souhaitsVisibles !== false;
 }
 
 async function chargerSuivis() {

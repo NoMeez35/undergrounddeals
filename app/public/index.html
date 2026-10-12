@@ -41,28 +41,38 @@
         <p id="message-recherche" role="status" hidden></p>
         <ul id="resultats-recherche" hidden></ul>
 
-        <div class="onglets" role="tablist">
-          <button id="onglet-jeu" role="tab" type="button" data-type="jeu" aria-controls="liste-suivis">
-            <span data-texte="suivis.onglet.jeu"></span> <span id="compte-jeu" class="compte"></span>
-          </button>
-          <button id="onglet-dlc" role="tab" type="button" data-type="dlc" aria-controls="liste-suivis">
-            <span data-texte="suivis.onglet.dlc"></span> <span id="compte-dlc" class="compte"></span>
-          </button>
+        <!-- Sur un grand écran, les produits de la liste de souhaits non suivis
+             sont dans une colonne à droite, toujours visible ; sur un petit
+             écran, au-dessus des suivis. La colonne est cachée quand elle est
+             vide (mes-suivis.js). -->
+        <div class="colonnes">
+          <div class="colonne-suivis">
+            <div class="onglets" role="tablist">
+              <button id="onglet-jeu" role="tab" type="button" data-type="jeu" aria-controls="liste-suivis">
+                <span data-texte="suivis.onglet.jeu"></span> <span id="compte-jeu" class="compte"></span>
+              </button>
+              <button id="onglet-dlc" role="tab" type="button" data-type="dlc" aria-controls="liste-suivis">
+                <span data-texte="suivis.onglet.dlc"></span> <span id="compte-dlc" class="compte"></span>
+              </button>
+            </div>
+            <p id="erreur-suivis" class="erreur" role="alert" hidden></p>
+            <p id="releve" class="note" hidden><span data-texte="suivis.releveLe"></span> <time id="heure-releve"></time></p>
+            <ul id="liste-suivis" role="tabpanel"></ul>
+            <p id="liste-vide" hidden></p>
+          </div>
+
+          <aside id="colonne-souhaits">
+            <section id="souhaits-prives" class="encart" hidden>
+              <p data-texte="souhaits.prives"></p>
+              <a href="https://steamcommunity.com/my/edit/settings" target="_blank" rel="noopener" data-texte="souhaits.lienConfidentialite"></a>
+              <button id="relire-souhaits" class="bouton secondaire" type="button" data-texte="souhaits.relire"></button>
+              <p id="message-souhaits" role="status" hidden></p>
+            </section>
+
+            <h3 id="titre-non-suivis" data-texte="souhaits.nonSuivis" hidden></h3>
+            <ul id="liste-non-suivis"></ul>
+          </aside>
         </div>
-        <p id="erreur-suivis" class="erreur" role="alert" hidden></p>
-        <p id="releve" class="note" hidden><span data-texte="suivis.releveLe"></span> <time id="heure-releve"></time></p>
-        <ul id="liste-suivis" role="tabpanel"></ul>
-        <p id="liste-vide" hidden></p>
-
-        <section id="souhaits-prives" class="encart" hidden>
-          <p data-texte="souhaits.prives"></p>
-          <a href="https://steamcommunity.com/my/edit/settings" target="_blank" rel="noopener" data-texte="souhaits.lienConfidentialite"></a>
-          <button id="relire-souhaits" class="bouton secondaire" type="button" data-texte="souhaits.relire"></button>
-          <p id="message-souhaits" role="status" hidden></p>
-        </section>
-
-        <h3 id="titre-non-suivis" data-texte="souhaits.nonSuivis" hidden></h3>
-        <ul id="liste-non-suivis"></ul>
       </section>
 
       <section id="ecran-alertes" hidden>

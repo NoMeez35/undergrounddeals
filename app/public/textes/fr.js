@@ -50,7 +50,7 @@ export default {
   "souhaits.relue": "Liste de souhaits relue.",
   "souhaits.tropTot": "Patientez une minute avant de réessayer.",
   "souhaits.erreur": "Steam ne répond pas. Réessayez dans quelques minutes.",
-  "souhaits.nonSuivis": "Dans votre liste de souhaits, non suivis",
+  "souhaits.nonSuivis": "Dans votre liste de souhaits Steam, non suivis",
   "souhaits.limiteAtteinte": "Non suivi (limite atteinte)",
   "souhaits.ecarte": "Retiré de vos suivis",
   "souhaits.retireDeSteam": "Retiré de Steam",

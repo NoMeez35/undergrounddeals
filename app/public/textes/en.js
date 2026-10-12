@@ -50,7 +50,7 @@ export default {
   "souhaits.relue": "Wishlist read again.",
   "souhaits.tropTot": "Please wait a minute before trying again.",
   "souhaits.erreur": "Steam is not responding. Please try again in a few minutes.",
-  "souhaits.nonSuivis": "In your wishlist, not tracked",
+  "souhaits.nonSuivis": "In your Steam wishlist, not tracked",
   "souhaits.limiteAtteinte": "Not tracked (limit reached)",
   "souhaits.ecarte": "Removed from your tracked products",
   "souhaits.retireDeSteam": "Removed from Steam",
