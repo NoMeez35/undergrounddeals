@@ -35,13 +35,19 @@ function bouton(cle, action) {
   return nouveau;
 }
 
+// Bouton qui ouvre la page Steam d'un produit de la liste de souhaits, pour
+// l'enlever aussi de la liste de souhaits Steam, que l'appli ne peut pas modifier.
+function boutonOuvrirSurSteam(produit) {
+  const ouvrir = lienSteam(produit, texte("souhaits.ouvrirSurSteam"));
+  ouvrir.className = "bouton secondaire";
+  return ouvrir;
+}
+
 function elementProduit(produit) {
   const ligne = element("li", { classe: "suivi" });
-  ligne.append(
-    lienSteam(produit),
-    elementPrix(produit),
-    bouton("suivis.retirer", (retirer) => retirerProduit(produit, retirer)),
-  );
+  ligne.append(lienSteam(produit), elementPrix(produit));
+  if (produit.dansListeDeSouhaits) ligne.append(boutonOuvrirSurSteam(produit));
+  ligne.append(bouton("suivis.retirer", (retirer) => retirerProduit(produit, retirer)));
   return ligne;
 }
 
@@ -59,17 +65,11 @@ function cleRaisonNonSuivi(produit) {
   return "souhaits.nonSuivi";
 }
 
-// Produit de la liste de souhaits resté non suivi. Un produit écarté propose
-// d'ouvrir sa page Steam, pour l'enlever aussi de la liste de souhaits Steam,
-// que l'appli ne peut pas modifier.
+// Produit de la liste de souhaits resté non suivi.
 function elementNonSuivi(produit) {
   const ligne = element("li", { classe: "suivi" });
   ligne.append(lienSteam(produit), element("span", { classe: "note", texte: texte(cleRaisonNonSuivi(produit)) }));
-  if (produit.ecarte) {
-    const ouvrir = lienSteam(produit, texte("souhaits.ouvrirSurSteam"));
-    ouvrir.className = "bouton secondaire";
-    ligne.append(ouvrir);
-  }
+  if (produit.ecarte) ligne.append(boutonOuvrirSurSteam(produit));
   ligne.append(bouton("souhaits.suivre", (suivre) => suivreSouhait(produit, suivre)));
   return ligne;
 }

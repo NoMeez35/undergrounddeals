@@ -59,11 +59,13 @@ function prixVersJson(ligne) {
 // Produits suivis, du plus récent au plus ancien (ceux d'un même import dans
 // l'ordre de la liste de souhaits), avec leur dernier prix relevé dans le pays
 // de l'utilisateur et l'heure du dernier relevé complet (`releveLe`) ; puis les
-// produits de sa liste de souhaits qui ne sont pas suivis.
+// produits de sa liste de souhaits qui ne sont pas suivis. Un produit suivi
+// indique s'il est dans la liste de souhaits (`dansListeDeSouhaits`).
 export async function listerSuivis({ utilisateur, env }) {
   const [{ results: produits }, { results: nonSuivis }, releve] = await env.DB.batch([
     env.DB.prepare(
-      `SELECT ${COLONNES_PRODUIT}, px.etat, px.prix_affiche, px.prix_initial_affiche, px.reduction
+      `SELECT ${COLONNES_PRODUIT}, px.etat, px.prix_affiche, px.prix_initial_affiche, px.reduction,
+              sh.app_id IS NOT NULL AS dans_souhaits
          FROM suivis s
          JOIN produits p ON p.app_id = s.app_id
          LEFT JOIN prix px ON px.app_id = s.app_id AND px.pays = ?2 AND px.vu_le >= ?3
@@ -85,7 +87,11 @@ export async function listerSuivis({ utilisateur, env }) {
     releveLe: releve.results[0]?.termine_le ?? null,
     // null tant que la liste n'a jamais été lue, false si elle est vide ou privée.
     souhaitsVisibles: utilisateur.souhaits_visibles === null ? null : utilisateur.souhaits_visibles === 1,
-    produits: produits.map((produit) => ({ ...produitVersJson(produit), prix: prixVersJson(produit) })),
+    produits: produits.map((produit) => ({
+      ...produitVersJson(produit),
+      prix: prixVersJson(produit),
+      dansListeDeSouhaits: produit.dans_souhaits === 1,
+    })),
     nonSuivis: nonSuivis.map((produit) => ({ ...produitVersJson(produit), ecarte: produit.ecarte === 1 })),
   });
 }

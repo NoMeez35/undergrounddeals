@@ -82,6 +82,19 @@ describe("synchronisation de la liste de souhaits", () => {
     expect(appIdsDe((await lister(utilisateur)).produits).sort()).toEqual([1400, 730]);
   });
 
+  it("indique quels produits suivis sont dans la liste de souhaits", async () => {
+    const utilisateur = await connecterUtilisateur();
+    await synchroniser(utilisateur, [620]);
+    await appeler("/api/suivis", { methode: "POST", cookies: [utilisateur.cookie], corps: '{"lien":"730"}' });
+
+    const { produits } = await lister(utilisateur);
+
+    expect(Object.fromEntries(produits.map((produit) => [produit.appId, produit.dansListeDeSouhaits]))).toEqual({
+      620: true,
+      730: false,
+    });
+  });
+
   it("ne retire rien et le signale si la liste est vide ou privée", async () => {
     const utilisateur = await connecterUtilisateur();
     await synchroniser(utilisateur, [620]);
