@@ -8,6 +8,9 @@ export const TYPES_PRODUIT = Object.keys(TYPE_STEAM);
 // Limite de suivi, par type (voir GLOSSARY.md).
 export const LIMITE_DE_SUIVI = 200;
 
+// Recherche d'un produit par son nom : longueur minimale du texte cherché.
+export const LONGUEUR_MIN_RECHERCHE = 2;
+
 // État du dernier prix relevé d'un produit dans un pays.
 export const ETATS_PRIX = {
   enVente: "enVente",

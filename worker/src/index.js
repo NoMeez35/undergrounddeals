@@ -3,6 +3,7 @@
 import { CHEMIN_CONNEXION_STEAM } from "../../app/public/chemins.js";
 import { listerAlertes } from "./alertes.js";
 import { CHEMIN_RETOUR_STEAM, deconnecter, demarrerConnexion, terminerConnexion } from "./connexion.js";
+import { rechercherProduits } from "./recherche.js";
 import { enregistrerReglages } from "./reglages.js";
 import { releverLesPrix } from "./releve.js";
 import { json } from "./reponses.js";
@@ -29,6 +30,7 @@ const ROUTES_CONNECTEES = {
   "GET /api/suivis": listerSuivis,
   "POST /api/suivis": ajouterSuivi,
   [`DELETE ${ROUTES_PRODUIT.suivis}`]: retirerSuivi,
+  "GET /api/recherche": rechercherProduits,
   "POST /api/souhaits/relire": relireSouhaits,
   [`POST ${ROUTES_PRODUIT.souhaits}`]: suivreSouhait,
 };

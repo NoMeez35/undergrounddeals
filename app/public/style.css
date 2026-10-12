@@ -146,7 +146,8 @@ input {
 
 #liste-suivis,
 #liste-non-suivis,
-#liste-alertes {
+#liste-alertes,
+#resultats-recherche {
   width: 100%;
   margin: 0;
   padding: 0;
@@ -206,4 +207,12 @@ input {
   color: #fff;
   font-size: 0.875em;
   font-weight: 600;
+}
+
+/* Image d'un produit dans les résultats de la recherche par nom. */
+.vignette {
+  width: 92px;
+  height: 35px;
+  border-radius: 4px;
+  object-fit: cover;
 }

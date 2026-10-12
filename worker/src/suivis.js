@@ -1,8 +1,8 @@
 // Produits suivis d'un utilisateur : liste avec derniers prix relevés, ajout manuel, retrait.
+import { lireSaisieProduit } from "../../app/public/saisie-produit.js";
 import { ERREURS_AJOUT, LIMITE_DE_SUIVI } from "../../app/public/suivis.js";
 import { jourDeLaVeille } from "./releve.js";
 import { json, montantsVersJson, sansContenu } from "./reponses.js";
-import { lireSaisieProduit } from "./saisie-produit.js";
 import { lireFichesSteam, SteamIndisponible } from "./steam-boutique.js";
 import { paysDe } from "./utilisateur.js";
 

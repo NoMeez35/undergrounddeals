@@ -32,12 +32,14 @@
         <form id="formulaire-ajout">
           <label>
             <span data-texte="ajout.libelle"></span>
-            <input id="lien" name="lien" required autocomplete="off" placeholder="https://store.steampowered.com/app/620/" />
+            <input id="lien" name="lien" required autocomplete="off" placeholder="Portal 2" />
             <small data-texte="ajout.aide"></small>
           </label>
           <button id="valider-ajout" class="bouton" type="submit" data-texte="ajout.bouton"></button>
         </form>
         <p id="message-ajout" role="status" hidden></p>
+        <p id="message-recherche" role="status" hidden></p>
+        <ul id="resultats-recherche" hidden></ul>
 
         <div class="onglets" role="tablist">
           <button id="onglet-jeu" role="tab" type="button" data-type="jeu" aria-controls="liste-suivis">

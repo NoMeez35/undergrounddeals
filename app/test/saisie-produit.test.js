@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { lireSaisieProduit } from "../src/saisie-produit.js";
+import { lireSaisieProduit } from "../public/saisie-produit.js";
 
 describe("lireSaisieProduit", () => {
   it.each([

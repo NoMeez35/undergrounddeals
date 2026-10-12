@@ -43,6 +43,7 @@ describe("textes de l'interface", () => {
         [, `ajout.erreur.limiteAtteinte.${type}`],
         [, `suivis.vide.${type}`],
         [, `suivis.onglet.${type}`],
+        [, `recherche.type.${type}`],
       ]),
     ].map(([, cle]) => cle);
 

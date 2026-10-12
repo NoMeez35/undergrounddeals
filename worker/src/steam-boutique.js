@@ -1,4 +1,4 @@
-// Boutique Steam : fiches et prix des produits, listes de souhaits.
+// Boutique Steam : fiches et prix des produits, recherche par nom, listes de souhaits.
 // API non documentées, constats du 2026-10-11 :
 // - appdetails avec `filters=price_overview` donne les prix de plusieurs AppID
 //   en une requête ; un produit sans prix dans le pays (gratuit, pas encore sorti,
@@ -12,15 +12,27 @@
 //   soit le pays demandé (vérifié aux États-Unis et au Japon) : le retrait se
 //   juge donc sur la fiche d'un seul pays ;
 // - IWishlistService/GetWishlist renvoie `{ response: {} }` pour une liste de
-//   souhaits vide ou privée (la confidentialité « Détails des jeux » du profil).
+//   souhaits vide ou privée (la confidentialité « Détails des jeux » du profil) ;
+// - IStoreQueryService/SearchSuggestions (vérifié le 2026-10-12) cherche des
+//   produits par leur nom, sans clé : fiches au même format que GetItems (type,
+//   nom, gratuité, images dans `assets`), dans l'ordre de pertinence de Steam.
+//   Elle renvoie aussi des bandes-son, démos et outils, à écarter. Certains
+//   vieux DLC n'y apparaissent pas (ex. Blood and Wine, 378648), même avec leur
+//   nom exact : ils restent ajoutables par lien ou AppID.
 import { TYPE_STEAM, TYPES_PRODUIT } from "../../app/public/suivis.js";
 
 const ADRESSE_APPDETAILS = "https://store.steampowered.com/api/appdetails";
 const ADRESSE_GET_ITEMS = "https://api.steampowered.com/IStoreBrowseService/GetItems/v1/";
 const ADRESSE_GET_WISHLIST = "https://api.steampowered.com/IWishlistService/GetWishlist/v1/";
+const ADRESSE_SEARCH_SUGGESTIONS = "https://api.steampowered.com/IStoreQueryService/SearchSuggestions/v1/";
+// Adresse de base des images des produits (fichiers de `assets`).
+const ADRESSE_IMAGES = "https://shared.akamai.steamstatic.com/store_item_assets/";
+// Langue Steam de chaque langue de l'interface ; anglais par défaut.
+const LANGUES_STEAM = { fr: "french", en: "english" };
 // Produits demandés par paquets, pour garder des adresses de taille raisonnable.
 export const TAILLE_PAQUET = 100;
-// Prix et fiches sont gardés en cache 15 minutes par Cloudflare, pour ménager Steam.
+// Prix, fiches et recherches sont gardés en cache 15 minutes par Cloudflare,
+// pour ménager Steam.
 const EN_CACHE = { cf: { cacheTtl: 15 * 60, cacheEverything: true } };
 
 // Type GetItems d'une fiche de remplacement d'un produit retiré de la vente.
@@ -143,4 +155,41 @@ export async function lireListeDeSouhaits(steamId) {
   return souhaits
     .sort((a, b) => rang(a) - rang(b) || (a.date_added ?? 0) - (b.date_added ?? 0))
     .map((souhait) => souhait.appid);
+}
+
+// Image d'un produit, d'après les `assets` de sa fiche, ou null.
+function imageProduit(assets) {
+  if (typeof assets?.asset_url_format !== "string" || typeof assets.small_capsule !== "string") return null;
+  return ADRESSE_IMAGES + assets.asset_url_format.replace("${FILENAME}", assets.small_capsule);
+}
+
+// Produits suivables dont le nom correspond au texte, vus depuis le pays et
+// dans la langue donnés, dans l'ordre de pertinence de Steam : au plus `nombre`
+// { appId, type, nom, image } (image null si Steam n'en donne pas).
+// Lève SteamIndisponible si Steam ne répond pas.
+export async function chercherProduitsSteam(texte, pays, langue, nombre) {
+  const reponse = await lireJson(
+    ADRESSE_SEARCH_SUGGESTIONS,
+    {
+      input_json: JSON.stringify({
+        search_term: texte,
+        // De la marge : bandes-son, démos et outils sont écartés ensuite.
+        max_results: nombre * 2,
+        context: { language: LANGUES_STEAM[langue] ?? LANGUES_STEAM.en, country_code: pays, steam_realm: 1 },
+        data_request: { include_assets: true },
+      }),
+    },
+    EN_CACHE,
+  );
+
+  const store_items = reponse?.response?.store_items;
+  return (Array.isArray(store_items) ? store_items : [])
+    .filter((fiche) => fiche?.success === 1 && typeof fiche.name === "string" && fiche.name && typeProduit(fiche))
+    .slice(0, nombre)
+    .map((fiche) => ({
+      appId: fiche.appid || fiche.id,
+      type: typeProduit(fiche),
+      nom: fiche.name,
+      image: imageProduit(fiche.assets),
+    }));
 }

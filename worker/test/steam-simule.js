@@ -4,6 +4,8 @@
 // - profil : réponse de GetPlayerSummaries ;
 // - fiches : AppID → { type: "game" | "dlc" | "music", name, is_free, appid } ;
 // - prix : pays → AppID → price_overview ;
+// - recherches : texte cherché → AppID trouvés, dans l'ordre de Steam (leurs
+//   fiches viennent de `fiches`) ;
 // - souhaits : SteamID → AppID dans l'ordre de priorité (absent : liste vide ou
 //   privée), ou réponse brute de GetWishlist si ce n'est pas un tableau ;
 // - enPanne : Steam répond 503 à tout ;
@@ -14,14 +16,30 @@ import { TYPE_STEAM } from "../../app/public/suivis.js";
 // Valeur du champ `type` de GetItems ; 11 : bande-son.
 const TYPES_GET_ITEMS = { game: TYPE_STEAM.jeu, dlc: TYPE_STEAM.dlc, music: 11 };
 
+// Fiche de GetItems ou de SearchSuggestions ; les images sont les fichiers de
+// `assets` (ex. small_capsule).
+function ficheSteam(appid, fiches) {
+  const fiche = fiches[appid];
+  if (!fiche) return { item_type: 0, id: appid, success: 15, appid: 0 };
+  return {
+    ...fiche,
+    id: appid,
+    success: 1,
+    appid: fiche.appid ?? appid,
+    type: TYPES_GET_ITEMS[fiche.type],
+    assets: { asset_url_format: `steam/apps/${appid}/\${FILENAME}?t=1`, small_capsule: `capsule_${appid}.jpg` },
+  };
+}
+
 function reponseGetItems(url, fiches) {
   const { ids } = JSON.parse(url.searchParams.get("input_json"));
-  const store_items = ids.map(({ appid }) => {
-    const fiche = fiches[appid];
-    if (!fiche) return { item_type: 0, id: appid, success: 15, appid: 0 };
-    return { ...fiche, id: appid, success: 1, appid: fiche.appid ?? appid, type: TYPES_GET_ITEMS[fiche.type] };
-  });
-  return { response: { store_items } };
+  return { response: { store_items: ids.map(({ appid }) => ficheSteam(appid, fiches)) } };
+}
+
+function reponseSearchSuggestions(url, recherches, fiches) {
+  const { search_term, max_results } = JSON.parse(url.searchParams.get("input_json"));
+  const appIds = (recherches[search_term] ?? []).slice(0, max_results);
+  return { response: { ids: appIds.map((appid) => ({ appid })), store_items: appIds.map((appid) => ficheSteam(appid, fiches)) } };
 }
 
 function reponseAppdetails(url, prix) {
@@ -55,6 +73,8 @@ export function simulerSteam(etat) {
         return Response.json(etat.profil);
       case "https://api.steampowered.com/IStoreBrowseService/GetItems/v1/":
         return Response.json(reponseGetItems(url, etat.fiches ?? {}));
+      case "https://api.steampowered.com/IStoreQueryService/SearchSuggestions/v1/":
+        return Response.json(reponseSearchSuggestions(url, etat.recherches ?? {}, etat.fiches ?? {}));
       case "https://store.steampowered.com/api/appdetails":
         return Response.json(reponseAppdetails(url, etat.prix ?? {}));
       case "https://api.steampowered.com/IWishlistService/GetWishlist/v1/":

@@ -1,7 +1,9 @@
-// Écran Mes suivis : ajout manuel, onglets Jeux / DLC, prix, retrait, et
-// produits de la liste de souhaits restés non suivis.
+// Écran Mes suivis : ajout manuel (AppID, lien Steam ou recherche par nom),
+// onglets Jeux / DLC, prix, retrait, et produits de la liste de souhaits
+// restés non suivis.
 import { afficherMessage, dateAffichee, element, elementMontants, elementParId, lienSteam } from "/page.js";
-import { ERREURS_AJOUT, ETATS_PRIX, TYPES_PRODUIT } from "/suivis.js";
+import { lireSaisieProduit } from "/saisie-produit.js";
+import { ERREURS_AJOUT, ETATS_PRIX, LONGUEUR_MIN_RECHERCHE, TYPES_PRODUIT } from "/suivis.js";
 import { poserTexte, texte } from "/textes.js";
 
 // Affichage d'un produit sans prix, selon l'état de son dernier relevé.
@@ -144,10 +146,9 @@ async function relireSouhaits() {
   afficherMessage(message, reponse?.status === 429 ? "souhaits.tropTot" : "souhaits.erreur", { erreur: true });
 }
 
-async function ajouterProduit(evenement) {
-  evenement.preventDefault();
-  const champ = elementParId("lien");
-  const bouton = elementParId("valider-ajout");
+// Ajout manuel d'un produit à partir d'un AppID ou d'un lien Steam ; `bouton`
+// est désactivé pendant l'ajout.
+async function ajouterProduit(lien, bouton) {
   const message = elementParId("message-ajout");
   message.hidden = true;
   bouton.disabled = true;
@@ -155,7 +156,7 @@ async function ajouterProduit(evenement) {
   const reponse = await fetch("/api/suivis", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ lien: champ.value }),
+    body: JSON.stringify({ lien }),
   }).catch(() => null);
   const resultat = await reponse?.json().catch(() => null);
   bouton.disabled = false;
@@ -164,14 +165,83 @@ async function ajouterProduit(evenement) {
     afficherMessage(message, cleRefus(resultat ?? {}), { erreur: true });
     return;
   }
-  champ.value = "";
+  elementParId("lien").value = "";
+  cacherRecherche();
   ongletActif = resultat.produit.type;
   afficherMessage(message, resultat.dejaSuivi ? "ajout.dejaSuivi" : "ajout.ajoute");
   await chargerSuivis();
 }
 
+// Recherche par nom : elle part après une pause dans la frappe. Seule la
+// réponse de la dernière recherche lancée est affichée.
+const PAUSE_AVANT_RECHERCHE = 400;
+let minuterieRecherche;
+let derniereRecherche = 0;
+
+// Le texte saisi est un nom à chercher, pas un AppID ou un lien Steam.
+function estUnNom(saisie) {
+  return !lireSaisieProduit(saisie) && saisie.length >= LONGUEUR_MIN_RECHERCHE;
+}
+
+function cacherRecherche() {
+  clearTimeout(minuterieRecherche);
+  derniereRecherche += 1;
+  elementParId("resultats-recherche").hidden = true;
+  elementParId("message-recherche").hidden = true;
+}
+
+function elementResultat(resultat) {
+  const ligne = element("li", { classe: "suivi" });
+  if (resultat.image) {
+    const image = element("img", { classe: "vignette" });
+    image.src = resultat.image;
+    image.alt = "";
+    ligne.append(image);
+  }
+  ligne.append(lienSteam(resultat), element("span", { classe: "note", texte: texte(`recherche.type.${resultat.type}`) }));
+  if (resultat.suivi) ligne.append(element("span", { classe: "note", texte: texte("recherche.dejaSuivi") }));
+  else ligne.append(bouton("recherche.suivre", (suivre) => ajouterProduit(String(resultat.appId), suivre)));
+  return ligne;
+}
+
+async function rechercher(nom) {
+  cacherRecherche();
+  const numero = derniereRecherche;
+  const reponse = await fetch(`/api/recherche?texte=${encodeURIComponent(nom)}`).catch(() => null);
+  const resultat = await reponse?.json().catch(() => null);
+  if (numero !== derniereRecherche) return;
+
+  const message = elementParId("message-recherche");
+  if (!reponse?.ok || !resultat?.resultats) {
+    afficherMessage(message, reponse?.status === 502 ? "ajout.erreur.steamIndisponible" : "recherche.erreur", { erreur: true });
+    return;
+  }
+  if (resultat.resultats.length === 0) {
+    afficherMessage(message, "recherche.aucunResultat");
+    return;
+  }
+  const liste = elementParId("resultats-recherche");
+  liste.replaceChildren(...resultat.resultats.map(elementResultat));
+  liste.hidden = false;
+}
+
+function surSaisie() {
+  cacherRecherche();
+  const saisie = elementParId("lien").value.trim();
+  if (estUnNom(saisie)) minuterieRecherche = setTimeout(() => rechercher(saisie), PAUSE_AVANT_RECHERCHE);
+}
+
+// Valider le formulaire cherche tout de suite un nom, ou ajoute un AppID ou un lien.
+function surEnvoi(evenement) {
+  evenement.preventDefault();
+  const saisie = elementParId("lien").value.trim();
+  if (estUnNom(saisie)) rechercher(saisie);
+  else ajouterProduit(saisie, elementParId("valider-ajout"));
+}
+
 export function preparerMesSuivis() {
-  elementParId("formulaire-ajout").addEventListener("submit", ajouterProduit);
+  elementParId("formulaire-ajout").addEventListener("submit", surEnvoi);
+  elementParId("lien").addEventListener("input", surSaisie);
   elementParId("relire-souhaits").addEventListener("click", relireSouhaits);
   for (const type of TYPES_PRODUIT) {
     elementParId(`onglet-${type}`).addEventListener("click", () => {

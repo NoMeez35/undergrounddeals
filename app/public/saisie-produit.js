@@ -1,5 +1,5 @@
-// Ce que l'utilisateur colle pour ajouter un produit : un AppID, ou un lien
-// de la boutique ou de la communauté Steam.
+// Partagé par l'appli et le Worker : ce que l'utilisateur colle pour ajouter
+// un produit, un AppID ou un lien de la boutique ou de la communauté Steam.
 const APP_ID = /^\d{1,10}$/;
 // ex. store.steampowered.com/app/620/Portal_2/, steamcommunity.com/app/620,
 // store.steampowered.com/agecheck/app/620/, store.steampowered.com/bundle/232/
