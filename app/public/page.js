@@ -43,9 +43,10 @@ export function elementMontants({ actuel, initial, reduction }) {
   return bloc;
 }
 
-// Nom du produit, avec un lien vers sa page Steam.
-export function lienSteam({ appId, nom }) {
-  const lien = element("a", { texte: nom });
+// Lien qui ouvre la page Steam du produit dans un nouvel onglet ; son texte est
+// le nom du produit, sauf si `libelle` est donné.
+export function lienSteam({ appId, nom }, libelle = nom) {
+  const lien = element("a", { texte: libelle });
   lien.href = `${ADRESSE_PRODUIT_STEAM}${appId}/`;
   lien.target = "_blank";
   lien.rel = "noopener";

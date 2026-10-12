@@ -56,6 +56,7 @@ export default {
   "souhaits.retireDeSteam": "Removed from Steam",
   "souhaits.nonSuivi": "Not tracked: a slot is free",
   "souhaits.suivre": "Track",
+  "souhaits.ouvrirSurSteam": "Open on Steam",
   "alertes.titre": "Alerts",
   "alertes.retour": "Back to my tracked products",
   "alertes.vide": "No alerts yet. When a product you track goes on sale, you will see it here.",

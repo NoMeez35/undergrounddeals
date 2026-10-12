@@ -1,6 +1,6 @@
 # Lien « Ouvrir sur Steam » pour un produit écarté
 
-Status: ready-for-agent
+Status: claimed
 Blocked by: 06
 
 ## Quoi
@@ -15,3 +15,4 @@ L'appli ne peut pas modifier la liste de souhaits Steam. Quand l'utilisateur a r
 ## Comments
 
 - 2026-10-12 : le nom du produit est déjà un lien vers sa page Steam (`lienSteam` dans `app/public/page.js`), mais rien ne l'indique. Une fois le produit enlevé de la liste de souhaits Steam, la synchronisation quotidienne le retire de la table `souhaits` (`worker/src/souhaits.js`), et il disparaît de la liste des non suivis ; « Réessayer l'import » n'apparaît que si la liste est vide ou privée.
+- 2026-10-12 : implémenté (`elementNonSuivi` dans `app/public/mes-suivis.js`) : un produit écarté affiche un bouton « Ouvrir sur Steam » (« Open on Steam ») qui ouvre sa page Steam dans un nouvel onglet. `lienSteam` accepte un libellé à la place du nom. Rien ne change côté serveur : `GET /api/suivis` renvoie déjà `ecarte`. En attente du test manuel du porteur du projet.

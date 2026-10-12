@@ -172,6 +172,10 @@ input {
   font-weight: 600;
 }
 
+.suivi a.bouton {
+  flex: none;
+}
+
 .suivi .bouton {
   padding: 6px 12px;
 }

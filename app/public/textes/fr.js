@@ -56,6 +56,7 @@ export default {
   "souhaits.retireDeSteam": "Retiré de Steam",
   "souhaits.nonSuivi": "Non suivi : une place est libre",
   "souhaits.suivre": "Suivre",
+  "souhaits.ouvrirSurSteam": "Ouvrir sur Steam",
   "alertes.titre": "Fil d'alertes",
   "alertes.retour": "Retour à Mes suivis",
   "alertes.vide": "Aucune alerte pour l'instant. Quand un produit que vous suivez passe en promo, vous le verrez ici.",

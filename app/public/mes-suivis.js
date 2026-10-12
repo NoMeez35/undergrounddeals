@@ -59,14 +59,18 @@ function cleRaisonNonSuivi(produit) {
   return "souhaits.nonSuivi";
 }
 
-// Produit de la liste de souhaits resté non suivi.
+// Produit de la liste de souhaits resté non suivi. Un produit écarté propose
+// d'ouvrir sa page Steam, pour l'enlever aussi de la liste de souhaits Steam,
+// que l'appli ne peut pas modifier.
 function elementNonSuivi(produit) {
   const ligne = element("li", { classe: "suivi" });
-  ligne.append(
-    lienSteam(produit),
-    element("span", { classe: "note", texte: texte(cleRaisonNonSuivi(produit)) }),
-    bouton("souhaits.suivre", (suivre) => suivreSouhait(produit, suivre)),
-  );
+  ligne.append(lienSteam(produit), element("span", { classe: "note", texte: texte(cleRaisonNonSuivi(produit)) }));
+  if (produit.ecarte) {
+    const ouvrir = lienSteam(produit, texte("souhaits.ouvrirSurSteam"));
+    ouvrir.className = "bouton secondaire";
+    ligne.append(ouvrir);
+  }
+  ligne.append(bouton("souhaits.suivre", (suivre) => suivreSouhait(produit, suivre)));
   return ligne;
 }
 
