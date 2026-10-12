@@ -1,6 +1,6 @@
 # Lien « Ouvrir sur Steam » pour un produit écarté
 
-Status: claimed
+Status: resolved
 Blocked by: 06
 
 ## Quoi
@@ -9,9 +9,9 @@ L'appli ne peut pas modifier la liste de souhaits Steam. Quand l'utilisateur a r
 
 ## Critères d'acceptation
 
-- [ ] Chaque produit écarté affiche un lien « Ouvrir sur Steam », en français et en anglais, qui ouvre sa page Steam dans un nouvel onglet.
-- [ ] Chaque produit suivi qui est dans la liste de souhaits affiche aussi « Ouvrir sur Steam », à côté de « Retirer » (demandé par le porteur du projet au test : la section des non suivis est tout en bas de la page).
-- [ ] Les autres produits non suivis (limite atteinte, place libre, retiré de Steam) n'ont pas ce lien.
+- [x] Chaque produit écarté affiche un lien « Ouvrir sur Steam », en français et en anglais, qui ouvre sa page Steam dans un nouvel onglet.
+- [x] Chaque produit suivi qui est dans la liste de souhaits affiche aussi « Ouvrir sur Steam », à côté de « Retirer » (demandé par le porteur du projet au test : la section des non suivis est tout en bas de la page).
+- [x] Les autres produits non suivis (limite atteinte, place libre, retiré de Steam) n'ont pas ce lien.
 
 ## Comments
 
@@ -19,3 +19,12 @@ L'appli ne peut pas modifier la liste de souhaits Steam. Quand l'utilisateur a r
 - 2026-10-12 : implémenté (`elementNonSuivi` dans `app/public/mes-suivis.js`) : un produit écarté affiche un bouton « Ouvrir sur Steam » (« Open on Steam ») qui ouvre sa page Steam dans un nouvel onglet. `lienSteam` accepte un libellé à la place du nom. Rien ne change côté serveur : `GET /api/suivis` renvoie déjà `ecarte`. En attente du test manuel du porteur du projet.
 - 2026-10-12 : au test, le porteur du projet a demandé le bouton à côté de « Retirer », la section des non suivis étant tout en bas d'une longue liste. `GET /api/suivis` indique désormais `dansListeDeSouhaits` pour chaque produit suivi ; le bouton du bas reste pour les produits écartés. En attente du test manuel.
 - 2026-10-12 : à la demande du porteur du projet, les produits de la liste de souhaits non suivis passent dans une colonne à droite (« Dans votre liste de souhaits Steam, non suivis »), qui reste visible en faisant défiler les suivis ; sur un écran de moins de 960 px, elle passe au-dessus des suivis. La colonne est cachée quand elle est vide. Rendu vérifié par capture (1280 px et 375 px).
+- 2026-10-12 : test manuel réussi par le porteur du projet (boutons « Ouvrir sur Steam », colonne à droite, petit écran, colonne vide cachée). Relecture du code à faire avant de clore.
+- 2026-10-12 : corrections après relecture, puis ticket clos :
+  - La colonne montre toute la liste de souhaits non suivie, jeux et DLC (type indiqué), quel que soit l'onglet : elle n'apparaît et ne disparaît plus en changeant d'onglet.
+  - La colonne est avant les suivis dans la page (ordre de lecture et du clavier = ordre affiché sur petit écran) ; à droite sur grand écran par `grid-template-areas`, avec une classe posée par mes-suivis.js au lieu de `:has()` ; intitulée par son titre (`aria-labelledby`).
+  - Chaque « Ouvrir sur Steam » a un nom accessible qui cite le produit et le nouvel onglet.
+  - Les résultats de la recherche par nom gardent la largeur de la liste des suivis.
+  - `dansListeDeSouhaits` reflète la dernière lecture de la liste de souhaits : une liste devenue privée n'est pas vidée (documenté dans `worker/src/suivis.js`).
+  - Gardé : `elementProduit` et `elementNonSuivi` se ressemblent mais affichent des boutons différents ; les fusionner rendrait le code moins clair.
+  - Rendu vérifié par capture (1280 px et 375 px) ; pas de test automatique de l'affichage (pas de tests de navigateur dans le projet).

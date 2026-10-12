@@ -41,11 +41,22 @@
         <p id="message-recherche" role="status" hidden></p>
         <ul id="resultats-recherche" hidden></ul>
 
-        <!-- Sur un grand écran, les produits de la liste de souhaits non suivis
-             sont dans une colonne à droite, toujours visible ; sur un petit
-             écran, au-dessus des suivis. La colonne est cachée quand elle est
-             vide (mes-suivis.js). -->
-        <div class="colonnes">
+        <!-- Les produits de la liste de souhaits non suivis : sur un grand écran,
+             dans une colonne à droite, toujours visible ; sur un petit écran,
+             au-dessus des suivis. mes-suivis.js cache la colonne quand elle n'a
+             rien à montrer, et sinon pose la classe `avec-souhaits`. -->
+        <div id="colonnes" class="colonnes">
+          <aside id="colonne-souhaits" class="colonne-souhaits" aria-labelledby="titre-non-suivis">
+            <h3 id="titre-non-suivis" data-texte="souhaits.nonSuivis"></h3>
+            <section id="souhaits-prives" class="encart" hidden>
+              <p data-texte="souhaits.prives"></p>
+              <a href="https://steamcommunity.com/my/edit/settings" target="_blank" rel="noopener" data-texte="souhaits.lienConfidentialite"></a>
+              <button id="relire-souhaits" class="bouton secondaire" type="button" data-texte="souhaits.relire"></button>
+              <p id="message-souhaits" role="status" hidden></p>
+            </section>
+            <ul id="liste-non-suivis"></ul>
+          </aside>
+
           <div class="colonne-suivis">
             <div class="onglets" role="tablist">
               <button id="onglet-jeu" role="tab" type="button" data-type="jeu" aria-controls="liste-suivis">
@@ -60,18 +71,6 @@
             <ul id="liste-suivis" role="tabpanel"></ul>
             <p id="liste-vide" hidden></p>
           </div>
-
-          <aside id="colonne-souhaits">
-            <section id="souhaits-prives" class="encart" hidden>
-              <p data-texte="souhaits.prives"></p>
-              <a href="https://steamcommunity.com/my/edit/settings" target="_blank" rel="noopener" data-texte="souhaits.lienConfidentialite"></a>
-              <button id="relire-souhaits" class="bouton secondaire" type="button" data-texte="souhaits.relire"></button>
-              <p id="message-souhaits" role="status" hidden></p>
-            </section>
-
-            <h3 id="titre-non-suivis" data-texte="souhaits.nonSuivis" hidden></h3>
-            <ul id="liste-non-suivis"></ul>
-          </aside>
         </div>
       </section>
 

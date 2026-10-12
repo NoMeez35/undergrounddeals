@@ -35,18 +35,21 @@ function bouton(cle, action) {
   return nouveau;
 }
 
-// Bouton qui ouvre la page Steam d'un produit de la liste de souhaits, pour
-// l'enlever aussi de la liste de souhaits Steam, que l'appli ne peut pas modifier.
-function boutonOuvrirSurSteam(produit) {
+// Lien, présenté comme un bouton, qui ouvre la page Steam d'un produit de la
+// liste de souhaits, pour l'enlever aussi de la liste de souhaits Steam, que
+// l'appli ne peut pas modifier. Son nom accessible cite le produit et le nouvel
+// onglet.
+function lienOuvrirSurSteam(produit) {
   const ouvrir = lienSteam(produit, texte("souhaits.ouvrirSurSteam"));
   ouvrir.className = "bouton secondaire";
+  ouvrir.setAttribute("aria-label", texte("souhaits.ouvrirSurSteamDe").replace("{nom}", produit.nom));
   return ouvrir;
 }
 
 function elementProduit(produit) {
   const ligne = element("li", { classe: "suivi" });
   ligne.append(lienSteam(produit), elementPrix(produit));
-  if (produit.dansListeDeSouhaits) ligne.append(boutonOuvrirSurSteam(produit));
+  if (produit.dansListeDeSouhaits) ligne.append(lienOuvrirSurSteam(produit));
   ligne.append(bouton("suivis.retirer", (retirer) => retirerProduit(produit, retirer)));
   return ligne;
 }
@@ -65,11 +68,15 @@ function cleRaisonNonSuivi(produit) {
   return "souhaits.nonSuivi";
 }
 
-// Produit de la liste de souhaits resté non suivi.
+// Produit de la liste de souhaits resté non suivi. La colonne mêle jeux et DLC :
+// le type est indiqué.
 function elementNonSuivi(produit) {
   const ligne = element("li", { classe: "suivi" });
-  ligne.append(lienSteam(produit), element("span", { classe: "note", texte: texte(cleRaisonNonSuivi(produit)) }));
-  if (produit.ecarte) ligne.append(boutonOuvrirSurSteam(produit));
+  ligne.append(
+    lienSteam(produit),
+    element("span", { classe: "note", texte: `${texte(`produit.type.${produit.type}`)} · ${texte(cleRaisonNonSuivi(produit))}` }),
+  );
+  if (produit.ecarte) ligne.append(lienOuvrirSurSteam(produit));
   ligne.append(bouton("souhaits.suivre", (suivre) => suivreSouhait(produit, suivre)));
   return ligne;
 }
@@ -88,12 +95,18 @@ function afficherListe() {
   vide.hidden = produits.length > 0;
   poserTexte(vide, `suivis.vide.${ongletActif}`);
 
-  const nonSuivis = etatSuivis.nonSuivis.filter((produit) => produit.type === ongletActif);
-  elementParId("titre-non-suivis").hidden = nonSuivis.length === 0;
-  elementParId("liste-non-suivis").replaceChildren(...nonSuivis.map(elementNonSuivi));
-  elementParId("souhaits-prives").hidden = etatSuivis.souhaitsVisibles !== false;
-  // La colonne de la liste de souhaits n'apparaît que si elle a quelque chose à montrer.
-  elementParId("colonne-souhaits").hidden = nonSuivis.length === 0 && etatSuivis.souhaitsVisibles !== false;
+  // Colonne de la liste de souhaits : tous les produits non suivis, jeux et DLC,
+  // quel que soit l'onglet, pour qu'elle ne change pas d'un onglet à l'autre.
+  // Elle n'apparaît que si elle a quelque chose à montrer.
+  const aucunNonSuivi = etatSuivis.nonSuivis.length === 0;
+  const listePrivee = etatSuivis.souhaitsVisibles === false;
+  elementParId("titre-non-suivis").hidden = aucunNonSuivi;
+  elementParId("liste-non-suivis").replaceChildren(...etatSuivis.nonSuivis.map(elementNonSuivi));
+  elementParId("souhaits-prives").hidden = !listePrivee;
+  const colonneVide = aucunNonSuivi && !listePrivee;
+  elementParId("colonne-souhaits").hidden = colonneVide;
+  // Deux colonnes sur un grand écran seulement si celle de droite est affichée.
+  elementParId("colonnes").classList.toggle("avec-souhaits", !colonneVide);
 }
 
 async function chargerSuivis() {
@@ -200,7 +213,7 @@ function elementResultat(resultat) {
     image.alt = "";
     ligne.append(image);
   }
-  ligne.append(lienSteam(resultat), element("span", { classe: "note", texte: texte(`recherche.type.${resultat.type}`) }));
+  ligne.append(lienSteam(resultat), element("span", { classe: "note", texte: texte(`produit.type.${resultat.type}`) }));
   if (resultat.suivi) ligne.append(element("span", { classe: "note", texte: texte("recherche.dejaSuivi") }));
   else ligne.append(bouton("recherche.suivre", (suivre) => ajouterProduit(String(resultat.appId), suivre)));
   return ligne;

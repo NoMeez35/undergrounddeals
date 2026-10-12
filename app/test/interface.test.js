@@ -44,7 +44,7 @@ describe("textes de l'interface", () => {
         [, `ajout.erreur.limiteAtteinte.${type}`],
         [, `suivis.vide.${type}`],
         [, `suivis.onglet.${type}`],
-        [, `recherche.type.${type}`],
+        [, `produit.type.${type}`],
       ]),
     ].map(([, cle]) => cle);
 
@@ -65,6 +65,10 @@ it.each(Object.keys(LANGUES))("les messages de recherche trop courte en %s citen
   for (const cle of ["ajout.erreur.lienInvalide", "recherche.erreur.tropCourte"]) {
     expect(textes[langue][cle]).toContain(String(LONGUEUR_MIN_RECHERCHE));
   }
+});
+
+it.each(Object.keys(LANGUES))("le nom accessible de « Ouvrir sur Steam » en %s cite le produit", (langue) => {
+  expect(textes[langue]["souhaits.ouvrirSurSteamDe"]).toContain("{nom}");
 });
 
 it("chaque langue de l'interface a son nom pour Steam", () => {

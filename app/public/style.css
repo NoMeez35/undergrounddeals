@@ -102,6 +102,8 @@ input {
   width: min(1040px, 100vw - 32px);
 }
 
+/* Petit écran : une seule colonne, la liste de souhaits (première dans la
+   page) au-dessus des suivis. */
 .colonnes {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -111,27 +113,32 @@ input {
 }
 
 .colonne-suivis,
-#colonne-souhaits {
+.colonne-souhaits {
   display: grid;
   gap: 12px;
   justify-items: center;
   min-width: 0;
 }
 
-/* Petit écran : la liste de souhaits passe au-dessus des suivis. */
-#colonne-souhaits {
-  order: -1;
+.colonne-suivis {
+  justify-self: center;
+  width: min(640px, 100%);
 }
 
 /* Grand écran : la liste de souhaits est à droite et reste visible en faisant
    défiler les suivis. */
 @media (min-width: 960px) {
-  .colonnes:has(#colonne-souhaits:not([hidden])) {
+  .colonnes.avec-souhaits {
     grid-template-columns: minmax(0, 1fr) 340px;
+    grid-template-areas: "suivis souhaits";
   }
 
-  #colonne-souhaits {
-    order: 0;
+  .colonnes.avec-souhaits .colonne-suivis {
+    grid-area: suivis;
+  }
+
+  .colonnes.avec-souhaits .colonne-souhaits {
+    grid-area: souhaits;
     position: sticky;
     top: 16px;
     max-height: calc(100vh - 32px);
@@ -139,10 +146,6 @@ input {
   }
 }
 
-.colonne-suivis {
-  justify-self: center;
-  width: min(640px, 100%);
-}
 
 .profil {
   display: flex;
@@ -198,6 +201,11 @@ input {
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/* Résultats de la recherche par nom : de la largeur de la liste des suivis. */
+#resultats-recherche {
+  width: min(640px, 100%);
 }
 
 .suivi,
