@@ -1,9 +1,10 @@
 // Écran Mes suivis : ajout manuel (AppID, lien Steam ou recherche par nom),
 // onglets Jeux / DLC, prix, retrait, et produits de la liste de souhaits
 // restés non suivis.
+import { CHEMIN_CONNEXION } from "/chemins.js";
 import { afficherMessage, dateAffichee, element, elementMontants, elementParId, lienSteam } from "/page.js";
-import { lireSaisieProduit } from "/saisie-produit.js";
-import { ERREURS_AJOUT, ETATS_PRIX, LONGUEUR_MIN_RECHERCHE, TYPES_PRODUIT } from "/suivis.js";
+import { lireSaisieProduit, peutEtreUnNom } from "/saisie-produit.js";
+import { ERREURS_AJOUT, ERREURS_RECHERCHE, ETATS_PRIX, TYPES_PRODUIT } from "/suivis.js";
 import { poserTexte, texte } from "/textes.js";
 
 // Affichage d'un produit sans prix, selon l'état de son dernier relevé.
@@ -146,20 +147,20 @@ async function relireSouhaits() {
   afficherMessage(message, reponse?.status === 429 ? "souhaits.tropTot" : "souhaits.erreur", { erreur: true });
 }
 
-// Ajout manuel d'un produit à partir d'un AppID ou d'un lien Steam ; `bouton`
-// est désactivé pendant l'ajout.
-async function ajouterProduit(lien, bouton) {
+// Ajout manuel d'un produit à partir d'un AppID ou d'un lien Steam ;
+// `boutonAjout` est désactivé pendant l'ajout.
+async function ajouterProduit(saisie, boutonAjout) {
   const message = elementParId("message-ajout");
   message.hidden = true;
-  bouton.disabled = true;
+  boutonAjout.disabled = true;
 
   const reponse = await fetch("/api/suivis", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ lien }),
+    body: JSON.stringify({ lien: saisie }),
   }).catch(() => null);
   const resultat = await reponse?.json().catch(() => null);
-  bouton.disabled = false;
+  boutonAjout.disabled = false;
 
   if (!reponse?.ok || !resultat?.produit) {
     afficherMessage(message, cleRefus(resultat ?? {}), { erreur: true });
@@ -177,11 +178,6 @@ async function ajouterProduit(lien, bouton) {
 const PAUSE_AVANT_RECHERCHE = 400;
 let minuterieRecherche;
 let derniereRecherche = 0;
-
-// Le texte saisi est un nom à chercher, pas un AppID ou un lien Steam.
-function estUnNom(saisie) {
-  return !lireSaisieProduit(saisie) && saisie.length >= LONGUEUR_MIN_RECHERCHE;
-}
 
 function cacherRecherche() {
   clearTimeout(minuterieRecherche);
@@ -204,6 +200,11 @@ function elementResultat(resultat) {
   return ligne;
 }
 
+// Clé du texte qui explique pourquoi la recherche a échoué.
+function cleEchecRecherche({ erreur } = {}) {
+  return Object.hasOwn(ERREURS_RECHERCHE, erreur) ? `recherche.erreur.${erreur}` : "recherche.erreur.inconnue";
+}
+
 async function rechercher(nom) {
   cacherRecherche();
   const numero = derniereRecherche;
@@ -211,13 +212,19 @@ async function rechercher(nom) {
   const resultat = await reponse?.json().catch(() => null);
   if (numero !== derniereRecherche) return;
 
+  if (reponse?.status === 401) {
+    // Session expirée : l'utilisateur doit se reconnecter.
+    location.replace(CHEMIN_CONNEXION);
+    return;
+  }
   const message = elementParId("message-recherche");
   if (!reponse?.ok || !resultat?.resultats) {
-    afficherMessage(message, reponse?.status === 502 ? "ajout.erreur.steamIndisponible" : "recherche.erreur", { erreur: true });
+    afficherMessage(message, cleEchecRecherche(resultat ?? {}), { erreur: true });
     return;
   }
   if (resultat.resultats.length === 0) {
-    afficherMessage(message, "recherche.aucunResultat");
+    // Un nombre est sans doute un AppID : « aucun résultat » l'embrouillerait.
+    if (!lireSaisieProduit(nom)) afficherMessage(message, "recherche.aucunResultat");
     return;
   }
   const liste = elementParId("resultats-recherche");
@@ -228,14 +235,15 @@ async function rechercher(nom) {
 function surSaisie() {
   cacherRecherche();
   const saisie = elementParId("lien").value.trim();
-  if (estUnNom(saisie)) minuterieRecherche = setTimeout(() => rechercher(saisie), PAUSE_AVANT_RECHERCHE);
+  if (peutEtreUnNom(saisie)) minuterieRecherche = setTimeout(() => rechercher(saisie), PAUSE_AVANT_RECHERCHE);
 }
 
-// Valider le formulaire cherche tout de suite un nom, ou ajoute un AppID ou un lien.
+// Valider le formulaire ajoute un AppID ou un lien Steam, ou cherche tout de
+// suite un nom ; le reste est refusé par le serveur avec un message clair.
 function surEnvoi(evenement) {
   evenement.preventDefault();
   const saisie = elementParId("lien").value.trim();
-  if (estUnNom(saisie)) rechercher(saisie);
+  if (!lireSaisieProduit(saisie) && peutEtreUnNom(saisie)) rechercher(saisie);
   else ajouterProduit(saisie, elementParId("valider-ajout"));
 }
 

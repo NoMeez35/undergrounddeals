@@ -1,5 +1,8 @@
 // Partagé par l'appli et le Worker : ce que l'utilisateur colle pour ajouter
-// un produit, un AppID ou un lien de la boutique ou de la communauté Steam.
+// un produit, un AppID ou un lien de la boutique ou de la communauté Steam, ou
+// le nom d'un produit à chercher.
+import { LONGUEUR_MIN_RECHERCHE } from "./suivis.js";
+
 const APP_ID = /^\d{1,10}$/;
 // ex. store.steampowered.com/app/620/Portal_2/, steamcommunity.com/app/620,
 // store.steampowered.com/agecheck/app/620/, store.steampowered.com/bundle/232/
@@ -17,4 +20,17 @@ export function lireSaisieProduit(texte) {
   if (!lien) return null;
   if (lien[1].toLowerCase() !== "app") return { pack: true };
   return { appId: Number(lien[2]) };
+}
+
+// Texte qui ressemble à une adresse web (ex. www.store.steampowered.com/app/620,
+// s.team/a/620) : ce n'est pas un nom à chercher, même si le lien n'est pas
+// reconnu.
+const ADRESSE = /^(?:[a-z]+:\/\/|www\.|[\w-]+(?:\.[\w-]+)+\/)/i;
+
+// Le texte peut être le nom d'un produit à chercher : assez long, et ni lien
+// Steam ni adresse web. Un nombre peut être un nom (ex. « 2048 ») comme un AppID.
+export function peutEtreUnNom(texte) {
+  if (typeof texte !== "string") return false;
+  const saisie = texte.trim();
+  return saisie.length >= LONGUEUR_MIN_RECHERCHE && !ADRESSE.test(saisie);
 }

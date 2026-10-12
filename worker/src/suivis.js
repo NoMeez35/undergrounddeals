@@ -180,3 +180,13 @@ export async function retirerSuivi({ utilisateur, env, appId }) {
   ]);
   return sansContenu();
 }
+
+// Parmi les AppID donnés, ceux que l'utilisateur suit.
+export async function appIdsSuivis(env, steamId, appIds) {
+  const { results } = await env.DB.prepare(
+    "SELECT app_id FROM suivis WHERE steam_id = ? AND app_id IN (SELECT value FROM json_each(?))",
+  )
+    .bind(steamId, JSON.stringify(appIds))
+    .all();
+  return new Set(results.map(({ app_id }) => app_id));
+}

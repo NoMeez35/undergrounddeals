@@ -80,6 +80,27 @@ describe("recherche d'un produit par son nom", () => {
     ]);
   });
 
+  it("renvoie un produit sans image quand Steam n'en donne pas", async () => {
+    const utilisateur = await connecterUtilisateur();
+    steam.fiches = { ...FICHES, 4000: { type: "game", name: "Jeu sans image", sansImage: true } };
+    steam.recherches.image = [4000];
+
+    const { resultats } = await (await rechercher(utilisateur, "image")).json();
+
+    expect(resultats).toEqual([expect.objectContaining({ appId: 4000, image: null })]);
+  });
+
+  it("ne renvoie qu'une fois un produit que Steam trouve sous deux AppID", async () => {
+    const utilisateur = await connecterUtilisateur();
+    // 401 est un ancien AppID que Steam redirige vers 400.
+    steam.fiches = { ...FICHES, 401: { type: "game", name: "Portal", appid: 400 } };
+    steam.recherches.portal = [400, 401, 620];
+
+    const { resultats } = await (await rechercher(utilisateur, "portal")).json();
+
+    expect(resultats.map(({ appId }) => appId)).toEqual([400, 620]);
+  });
+
   it("renvoie au plus 10 résultats", async () => {
     const utilisateur = await connecterUtilisateur();
     const beaucoup = Array.from({ length: 15 }, (_, i) => 40_000_000 + i);
@@ -105,7 +126,7 @@ describe("recherche d'un produit par son nom", () => {
     const reponse = await rechercher(utilisateur, " p ");
 
     expect(reponse.status).toBe(400);
-    expect(await reponse.json()).toEqual({ erreur: "rechercheTropCourte" });
+    expect(await reponse.json()).toEqual({ erreur: "tropCourte" });
     expect(steam.requetes).toEqual([]);
   });
 

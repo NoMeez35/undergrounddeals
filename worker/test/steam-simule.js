@@ -17,7 +17,7 @@ import { TYPE_STEAM } from "../../app/public/suivis.js";
 const TYPES_GET_ITEMS = { game: TYPE_STEAM.jeu, dlc: TYPE_STEAM.dlc, music: 11 };
 
 // Fiche de GetItems ou de SearchSuggestions ; les images sont les fichiers de
-// `assets` (ex. small_capsule).
+// `assets` (ex. small_capsule), absents si la fiche a `sansImage`.
 function ficheSteam(appid, fiches) {
   const fiche = fiches[appid];
   if (!fiche) return { item_type: 0, id: appid, success: 15, appid: 0 };
@@ -27,7 +27,9 @@ function ficheSteam(appid, fiches) {
     success: 1,
     appid: fiche.appid ?? appid,
     type: TYPES_GET_ITEMS[fiche.type],
-    assets: { asset_url_format: `steam/apps/${appid}/\${FILENAME}?t=1`, small_capsule: `capsule_${appid}.jpg` },
+    assets: fiche.sansImage
+      ? undefined
+      : { asset_url_format: `steam/apps/${appid}/\${FILENAME}?t=1`, small_capsule: `capsule_${appid}.jpg` },
   };
 }
 

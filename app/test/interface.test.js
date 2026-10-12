@@ -7,9 +7,9 @@ import mesSuivis from "../public/mes-suivis.js?raw";
 import { EVENEMENTS } from "../public/alertes.js";
 import { CHEMIN_ALERTES, CHEMIN_CONNEXION, CHEMIN_REGLAGES } from "../public/chemins.js";
 import pageAppli from "../public/index.html?raw";
-import { LANGUES, proposerLangue } from "../public/langues.js";
+import { LANGUES, LANGUES_STEAM, proposerLangue } from "../public/langues.js";
 import { lirePays, PAYS, proposerPays } from "../public/pays.js";
-import { ERREURS_AJOUT, LIMITE_DE_SUIVI, TYPES_PRODUIT } from "../public/suivis.js";
+import { ERREURS_AJOUT, ERREURS_RECHERCHE, LIMITE_DE_SUIVI, LONGUEUR_MIN_RECHERCHE, TYPES_PRODUIT } from "../public/suivis.js";
 
 const textes = Object.fromEntries(
   await Promise.all(
@@ -36,6 +36,7 @@ describe("textes de l'interface", () => {
       // Clés composées : une par raison de refus d'un ajout, une par type de
       // produit, une par événement d'une alerte.
       ...Object.keys(EVENEMENTS).map((evenement) => [, `alertes.evenement.${evenement}`]),
+      ...Object.keys(ERREURS_RECHERCHE).map((erreur) => [, `recherche.erreur.${erreur}`]),
       ...Object.keys(ERREURS_AJOUT)
         .filter((erreur) => erreur !== ERREURS_AJOUT.limiteAtteinte)
         .map((erreur) => [, `ajout.erreur.${erreur}`]),
@@ -58,6 +59,16 @@ it.each(Object.keys(LANGUES))("les messages de limite en %s citent la limite de 
   for (const type of TYPES_PRODUIT) {
     expect(textes[langue][`ajout.erreur.limiteAtteinte.${type}`]).toContain(String(LIMITE_DE_SUIVI));
   }
+});
+
+it.each(Object.keys(LANGUES))("les messages de recherche trop courte en %s citent la longueur minimale", (langue) => {
+  for (const cle of ["ajout.erreur.lienInvalide", "recherche.erreur.tropCourte"]) {
+    expect(textes[langue][cle]).toContain(String(LONGUEUR_MIN_RECHERCHE));
+  }
+});
+
+it("chaque langue de l'interface a son nom pour Steam", () => {
+  expect(Object.keys(LANGUES_STEAM).sort()).toEqual(Object.keys(LANGUES).sort());
 });
 
 describe("proposerLangue", () => {

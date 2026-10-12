@@ -30,3 +30,10 @@ export const ERREURS_AJOUT = {
   limiteAtteinte: "limiteAtteinte",
   steamIndisponible: "steamIndisponible",
 };
+
+// Raisons pour lesquelles une recherche par nom échoue (champ `erreur` de la
+// réponse) ; l'appli affiche le texte `recherche.erreur.<raison>`.
+export const ERREURS_RECHERCHE = {
+  tropCourte: "tropCourte",
+  steamIndisponible: "steamIndisponible",
+};

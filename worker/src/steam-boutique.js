@@ -19,6 +19,7 @@
 //   Elle renvoie aussi des bandes-son, démos et outils, à écarter. Certains
 //   vieux DLC n'y apparaissent pas (ex. Blood and Wine, 378648), même avec leur
 //   nom exact : ils restent ajoutables par lien ou AppID.
+import { LANGUE_PAR_DEFAUT, LANGUES_STEAM } from "../../app/public/langues.js";
 import { TYPE_STEAM, TYPES_PRODUIT } from "../../app/public/suivis.js";
 
 const ADRESSE_APPDETAILS = "https://store.steampowered.com/api/appdetails";
@@ -27,8 +28,6 @@ const ADRESSE_GET_WISHLIST = "https://api.steampowered.com/IWishlistService/GetW
 const ADRESSE_SEARCH_SUGGESTIONS = "https://api.steampowered.com/IStoreQueryService/SearchSuggestions/v1/";
 // Adresse de base des images des produits (fichiers de `assets`).
 const ADRESSE_IMAGES = "https://shared.akamai.steamstatic.com/store_item_assets/";
-// Langue Steam de chaque langue de l'interface ; anglais par défaut.
-const LANGUES_STEAM = { fr: "french", en: "english" };
 // Produits demandés par paquets, pour garder des adresses de taille raisonnable.
 export const TAILLE_PAQUET = 100;
 // Prix, fiches et recherches sont gardés en cache 15 minutes par Cloudflare,
@@ -164,10 +163,10 @@ function imageProduit(assets) {
 }
 
 // Produits suivables dont le nom correspond au texte, vus depuis le pays et
-// dans la langue donnés, dans l'ordre de pertinence de Steam : au plus `nombre`
-// { appId, type, nom, image } (image null si Steam n'en donne pas).
-// Lève SteamIndisponible si Steam ne répond pas.
-export async function chercherProduitsSteam(texte, pays, langue, nombre) {
+// dans la langue donnés, dans l'ordre de pertinence de Steam : au plus
+// `nombre` { appId, type, nom, image } (image null si Steam n'en donne pas),
+// chaque AppID une seule fois. Lève SteamIndisponible si Steam ne répond pas.
+export async function chercherProduitsSteam(texte, { pays, langue }, nombre) {
   const reponse = await lireJson(
     ADRESSE_SEARCH_SUGGESTIONS,
     {
@@ -175,7 +174,11 @@ export async function chercherProduitsSteam(texte, pays, langue, nombre) {
         search_term: texte,
         // De la marge : bandes-son, démos et outils sont écartés ensuite.
         max_results: nombre * 2,
-        context: { language: LANGUES_STEAM[langue] ?? LANGUES_STEAM.en, country_code: pays, steam_realm: 1 },
+        context: {
+          language: LANGUES_STEAM[langue] ?? LANGUES_STEAM[LANGUE_PAR_DEFAUT],
+          country_code: pays,
+          steam_realm: 1,
+        },
         data_request: { include_assets: true },
       }),
     },
@@ -183,13 +186,13 @@ export async function chercherProduitsSteam(texte, pays, langue, nombre) {
   );
 
   const store_items = reponse?.response?.store_items;
-  return (Array.isArray(store_items) ? store_items : [])
-    .filter((fiche) => fiche?.success === 1 && typeof fiche.name === "string" && fiche.name && typeProduit(fiche))
-    .slice(0, nombre)
-    .map((fiche) => ({
-      appId: fiche.appid || fiche.id,
-      type: typeProduit(fiche),
-      nom: fiche.name,
-      image: imageProduit(fiche.assets),
-    }));
+  // Un ancien AppID redirigé peut renvoyer le même produit qu'un autre résultat.
+  const produits = new Map();
+  for (const fiche of Array.isArray(store_items) ? store_items : []) {
+    if (fiche?.success !== 1 || typeof fiche.name !== "string" || !fiche.name || !typeProduit(fiche)) continue;
+    const appId = fiche.appid || fiche.id;
+    if (produits.has(appId)) continue;
+    produits.set(appId, { appId, type: typeProduit(fiche), nom: fiche.name, image: imageProduit(fiche.assets) });
+  }
+  return [...produits.values()].slice(0, nombre);
 }

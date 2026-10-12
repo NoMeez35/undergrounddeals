@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { lireSaisieProduit } from "../public/saisie-produit.js";
+import { lireSaisieProduit, peutEtreUnNom } from "../public/saisie-produit.js";
 
 describe("lireSaisieProduit", () => {
   it.each([
@@ -29,5 +29,24 @@ describe("lireSaisieProduit", () => {
     [null],
   ])("refuse %s", (texte) => {
     expect(lireSaisieProduit(texte)).toBeNull();
+  });
+});
+
+describe("peutEtreUnNom", () => {
+  it.each([["portal"], ["  Portal 2 "], ["Half-Life 2: Episode One"], ["2048"], ["620"]])("accepte %s", (texte) => {
+    expect(peutEtreUnNom(texte)).toBe(true);
+  });
+
+  it.each([
+    ["p"],
+    ["  p  "],
+    ["https://store.steampowered.com/app/620/"],
+    ["https://www.store.steampowered.com/app/620"],
+    ["www.steampowered.com"],
+    ["s.team/a/620"],
+    ["store.steampowered.com/search/?term=portal"],
+    [null],
+  ])("refuse %s", (texte) => {
+    expect(peutEtreUnNom(texte)).toBe(false);
   });
 });

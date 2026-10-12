@@ -1,6 +1,6 @@
 # Recherche d'un produit par son nom
 
-Status: claimed
+Status: resolved
 Blocked by: 05
 
 ## Quoi
@@ -9,12 +9,12 @@ Dans Mes suivis, l'utilisateur peut taper le nom d'un jeu ou d'un DLC au lieu de
 
 ## Critères d'acceptation
 
-- [ ] Taper un nom (au moins 2 caractères) affiche les produits Steam correspondants, avec leur nom et leur image, dans la langue et le pays de l'utilisateur.
-- [ ] La recherche ne part qu'après une courte pause dans la frappe, pas à chaque lettre.
-- [ ] Choisir un résultat l'ajoute aux suivis, avec les mêmes règles qu'un ajout manuel : packs et types non suivis refusés, limite de suivi, pas de doublon.
-- [ ] Un produit déjà suivi est signalé comme tel dans la liste.
-- [ ] Un lien Steam ou un AppID collé dans le champ marche toujours comme avant.
-- [ ] Aucun résultat, ou Steam qui ne répond pas : un message clair.
+- [x] Taper un nom (au moins 2 caractères) affiche les produits Steam correspondants, avec leur nom et leur image, dans la langue et le pays de l'utilisateur.
+- [x] La recherche ne part qu'après une courte pause dans la frappe, pas à chaque lettre.
+- [x] Choisir un résultat l'ajoute aux suivis, avec les mêmes règles qu'un ajout manuel : packs et types non suivis refusés, limite de suivi, pas de doublon.
+- [x] Un produit déjà suivi est signalé comme tel dans la liste.
+- [x] Un lien Steam ou un AppID collé dans le champ marche toujours comme avant.
+- [x] Aucun résultat, ou Steam qui ne répond pas : un message clair.
 
 ## Comments
 
@@ -27,3 +27,11 @@ Dans Mes suivis, l'utilisateur peut taper le nom d'un jeu ou d'un DLC au lieu de
   - Le champ d'ajout accepte un nom : la recherche part 400 ms après la dernière frappe (ou tout de suite avec « Ajouter ») ; un AppID ou un lien est ajouté comme avant. `lireSaisieProduit` est déplacé dans `app/public/saisie-produit.js`, partagé par l'appli et le Worker.
   - Limite de Steam : certains vieux DLC (ex. Blood and Wine, 378648) n'apparaissent dans aucune recherche Steam, même avec leur nom exact ; ils restent ajoutables par lien ou AppID.
   - En attente du test manuel du porteur du projet.
+- 2026-10-12 : test manuel réussi par le porteur du projet (recherche, ajout depuis la liste, déjà suivi, DLC, aucun résultat, lien et AppID, anglais). Relecture du code à faire avant de clore.
+- 2026-10-12 : corrections après relecture, puis ticket clos :
+  - Une adresse web non reconnue (ex. `www.store.steampowered.com/app/620`, `s.team/…`) n'est plus cherchée comme un nom : elle est refusée comme avant (`peutEtreUnNom` dans `app/public/saisie-produit.js`, testée).
+  - Un nombre est cherché comme un nom pendant la frappe (ex. « 2048 »), mais « Ajouter » l'ajoute comme un AppID ; « aucun résultat » n'est pas affiché pour un nombre.
+  - Un produit que Steam trouve sous deux AppID n'apparaît qu'une fois ; une session expirée renvoie à l'écran Connexion.
+  - Erreurs de recherche dans `ERREURS_RECHERCHE`, avec leurs textes ; noms des langues pour Steam dans `app/public/langues.js` (`LANGUES_STEAM`) ; lecture des suivis dans `suivis.js` (`appIdsSuivis`).
+  - Non testés automatiquement (pas de tests de navigateur dans le projet) : la pause de frappe et l'abandon des réponses dépassées ; vérifiés au test manuel.
+  - Gardés : le type (Jeu/DLC) et le lien vers la page Steam dans chaque résultat, pour distinguer les noms proches ; le texte d'exemple « Portal 2 », identique dans les deux langues. Pas de limite de recherches par utilisateur (shortcut noté dans `worker/src/recherche.js`).
