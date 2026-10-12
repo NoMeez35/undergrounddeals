@@ -5,6 +5,7 @@ import { CHEMIN_RETOUR_STEAM, deconnecter, demarrerConnexion, terminerConnexion 
 import { enregistrerReglages } from "./reglages.js";
 import { releverLesPrix } from "./releve.js";
 import { json } from "./reponses.js";
+import { listerAlertes } from "./alertes.js";
 import { relireSouhaits, suivreSouhait, synchroniserLesListesEnRetard } from "./souhaits.js";
 import { ajouterSuivi, listerSuivis, retirerSuivi } from "./suivis.js";
 import { renvoyerProfil, utilisateurConnecte } from "./utilisateur.js";
@@ -25,6 +26,7 @@ const ROUTES_CONNECTEES = {
   "GET /api/moi": renvoyerProfil,
   "PUT /api/reglages": enregistrerReglages,
   "GET /api/suivis": listerSuivis,
+  "GET /api/alertes": listerAlertes,
   "POST /api/suivis": ajouterSuivi,
   [`DELETE ${ROUTES_PRODUIT.suivis}`]: retirerSuivi,
   "POST /api/souhaits/relire": relireSouhaits,

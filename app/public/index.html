@@ -23,6 +23,7 @@
         <header class="profil">
           <img id="avatar" alt="" width="40" height="40" hidden />
           <p><span data-texte="accueil.connecte"></span> <strong id="nom"></strong></p>
+          <a id="lien-alertes" class="bouton secondaire" data-texte="accueil.alertes"></a>
           <a id="lien-reglages" class="bouton secondaire" data-texte="accueil.reglages"></a>
           <button id="deconnexion" class="bouton secondaire" type="button" data-texte="deconnexion"></button>
         </header>
@@ -60,6 +61,14 @@
 
         <h3 id="titre-non-suivis" data-texte="souhaits.nonSuivis" hidden></h3>
         <ul id="liste-non-suivis"></ul>
+      </section>
+
+      <section id="ecran-alertes" hidden>
+        <h2 data-texte="alertes.titre"></h2>
+        <a id="retour-alertes" class="bouton secondaire" data-texte="alertes.retour"></a>
+        <p id="erreur-alertes" class="erreur" role="alert" hidden></p>
+        <ul id="liste-alertes"></ul>
+        <p id="alertes-vide" data-texte="alertes.vide" hidden></p>
       </section>
 
       <!-- Choix de la langue et du pays : à la première connexion, puis dans les Réglages.

@@ -34,7 +34,7 @@ beforeEach(async () => {
   };
   vi.stubGlobal("fetch", simulerSteam(steam));
   // Chaque test part d'une base sans utilisateurs ni relevés.
-  for (const table of ["prix", "historique_prix", "releves_pays", "suivis", "souhaits", "utilisateurs"]) {
+  for (const table of ["alertes", "prix", "historique_prix", "releves_pays", "suivis", "souhaits", "utilisateurs"]) {
     await env.DB.prepare(`DELETE FROM ${table}`).run();
   }
 });
@@ -184,8 +184,8 @@ describe("relevé des prix", () => {
     expect((await lister(utilisateur)).produits[0].prix).toMatchObject({ actuel: "9.69 EUR" });
   });
 
-  it("relève au plus 9 paquets de 100 produits par passage, et poursuit un relevé inachevé l'heure suivante", async () => {
-    const utilisateur = await suivant(Array.from({ length: 950 }, (_, i) => 30_000_000 + i));
+  it("relève au plus 7 paquets de 100 produits par passage, et poursuit un relevé inachevé l'heure suivante", async () => {
+    const utilisateur = await suivant(Array.from({ length: 750 }, (_, i) => 30_000_000 + i));
     const finDHeure = minutesPlusTard(QUATORZE_HEURES, 50);
 
     await releverLesPrix(env, finDHeure);
@@ -193,8 +193,8 @@ describe("relevé des prix", () => {
     steam.requetes = [];
     await releverLesPrix(env, uneHeurePlusTard(finDHeure));
 
-    expect(premierPassage).toBe(9);
-    expect(appelsPrix()).toEqual([`FR ${Array.from({ length: 50 }, (_, i) => 30_000_900 + i).join(",")}`]);
+    expect(premierPassage).toBe(7);
+    expect(appelsPrix()).toEqual([`FR ${Array.from({ length: 50 }, (_, i) => 30_000_700 + i).join(",")}`]);
     expect((await lister(utilisateur)).releveLe).toBe(uneHeurePlusTard(finDHeure).toISOString());
   });
 
@@ -204,7 +204,7 @@ describe("relevé des prix", () => {
     const requetes = vi.spyOn(env.DB, "prepare");
     const requetesParPassage = [];
 
-    for (const minutes of [0, 5, 10]) {
+    for (const minutes of [0, 5, 10, 15]) {
       requetes.mockClear();
       await releverLesPrix(env, minutesPlusTard(QUATORZE_HEURES, minutes));
       requetesParPassage.push(requetes.mock.calls.length);

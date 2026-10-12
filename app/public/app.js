@@ -1,10 +1,12 @@
 import {
   CHEMIN_ACCUEIL,
+  CHEMIN_ALERTES,
   CHEMIN_CONNEXION,
   CHEMIN_CONNEXION_STEAM,
   CHEMIN_REGLAGES,
   ERREUR_CONNEXION_STEAM,
 } from "/chemins.js";
+import { preparerFilAlertes } from "/fil-alertes.js";
 import { LANGUES, proposerLangue } from "/langues.js";
 import { PAYS, proposerPays } from "/pays.js";
 import { preparerMesSuivis } from "/mes-suivis.js";
@@ -17,6 +19,7 @@ const ECRANS = {
   connexion: "ecran-connexion",
   accueil: "ecran-accueil",
   reglages: "ecran-reglages",
+  alertes: "ecran-alertes",
 };
 
 // L'écran Réglages sert aussi à la première connexion, pour confirmer les choix proposés.
@@ -26,8 +29,10 @@ const MODES_REGLAGES = {
 };
 
 elementParId("lien-connexion-steam").href = CHEMIN_CONNEXION_STEAM;
+elementParId("lien-alertes").href = CHEMIN_ALERTES;
 elementParId("lien-reglages").href = CHEMIN_REGLAGES;
 elementParId("retour-reglages").href = CHEMIN_ACCUEIL;
+elementParId("retour-alertes").href = CHEMIN_ACCUEIL;
 
 function afficher(ecran) {
   elementParId("chargement").hidden = true;
@@ -134,6 +139,9 @@ try {
         langue: langueNavigateur,
         pays: proposerPays(moi.paysProfil, navigator.languages),
       });
+    } else if (location.pathname === CHEMIN_ALERTES) {
+      afficher(ECRANS.alertes);
+      await preparerFilAlertes();
     } else if (location.pathname === CHEMIN_REGLAGES) {
       afficherReglages(MODES_REGLAGES.reglages, moi);
     } else {

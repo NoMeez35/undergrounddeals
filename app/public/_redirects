@@ -2,3 +2,4 @@
 # Tout autre chemin inconnu reçoit 404.html avec le code 404.
 /connexion / 200
 /reglages / 200
+/alertes / 200

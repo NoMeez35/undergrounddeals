@@ -1,10 +1,9 @@
 // Écran Mes suivis : ajout manuel, onglets Jeux / DLC, prix, retrait, et
 // produits de la liste de souhaits restés non suivis.
-import { afficherMessage, elementParId } from "/page.js";
+import { afficherMessage, dateAffichee, element, elementMontants, elementParId, lienSteam } from "/page.js";
 import { ERREURS_AJOUT, ETATS_PRIX, TYPES_PRODUIT } from "/suivis.js";
 import { poserTexte, texte } from "/textes.js";
 
-const ADRESSE_PRODUIT_STEAM = "https://store.steampowered.com/app/";
 // Affichage d'un produit sans prix, selon l'état de son dernier relevé.
 const AFFICHAGE_SANS_PRIX = {
   [ETATS_PRIX.gratuit]: { cle: "suivis.gratuit", classe: "badge" },
@@ -16,26 +15,6 @@ let ongletActif = TYPES_PRODUIT[0];
 // Dernière réponse de GET /api/suivis.
 let etatSuivis = { produits: [], nonSuivis: [], limite: 0, releveLe: null, souhaitsVisibles: null };
 
-// « −50 % » en français, « -50% » en anglais.
-function reductionAffichee(reduction) {
-  return new Intl.NumberFormat(document.documentElement.lang, { style: "percent" }).format(-reduction / 100);
-}
-
-// Heure seule si c'est aujourd'hui, sinon date et heure, dans la langue de l'interface.
-function dateAffichee(iso) {
-  const date = new Date(iso);
-  const options =
-    date.toDateString() === new Date().toDateString() ? { timeStyle: "short" } : { dateStyle: "medium", timeStyle: "short" };
-  return new Intl.DateTimeFormat(document.documentElement.lang, options).format(date);
-}
-
-function element(balise, { classe, texte: contenu } = {}) {
-  const nouveau = document.createElement(balise);
-  if (classe) nouveau.className = classe;
-  if (contenu) nouveau.textContent = contenu;
-  return nouveau;
-}
-
 // Dernier prix relevé, ou ce qui en tient lieu : badges « Retiré de Steam » et
 // « Gratuit », pas encore sorti, pas en vente dans le pays, pas encore relevé.
 function elementPrix({ prix, retireDeSteam }) {
@@ -43,21 +22,7 @@ function elementPrix({ prix, retireDeSteam }) {
   if (!prix) return element("span", { classe: "sans-prix", texte: texte("suivis.pasEncoreReleve") });
   const sansPrix = AFFICHAGE_SANS_PRIX[prix.etat];
   if (sansPrix) return element("span", { classe: sansPrix.classe, texte: texte(sansPrix.cle) });
-  const bloc = element("span", { classe: "prix" });
-  bloc.append(element("strong", { texte: prix.actuel }));
-  if (prix.reduction > 0) {
-    if (prix.initial) bloc.append(" ", element("s", { texte: prix.initial }));
-    bloc.append(" ", element("span", { classe: "reduction", texte: reductionAffichee(prix.reduction) }));
-  }
-  return bloc;
-}
-
-function lienSteam(produit) {
-  const lien = element("a", { texte: produit.nom });
-  lien.href = `${ADRESSE_PRODUIT_STEAM}${produit.appId}/`;
-  lien.target = "_blank";
-  lien.rel = "noopener";
-  return lien;
+  return elementMontants(prix);
 }
 
 function bouton(cle, action) {

@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import redirections from "../public/_redirects?raw";
 import pageIntrouvable from "../public/404.html?raw";
 import appli from "../public/app.js?raw";
+import filAlertes from "../public/fil-alertes.js?raw";
 import mesSuivis from "../public/mes-suivis.js?raw";
-import { CHEMIN_CONNEXION, CHEMIN_REGLAGES } from "../public/chemins.js";
+import { EVENEMENTS } from "../public/alertes.js";
+import { CHEMIN_ALERTES, CHEMIN_CONNEXION, CHEMIN_REGLAGES } from "../public/chemins.js";
 import pageAppli from "../public/index.html?raw";
 import { LANGUES, proposerLangue } from "../public/langues.js";
 import { lirePays, PAYS, proposerPays } from "../public/pays.js";
@@ -27,11 +29,13 @@ describe("textes de l'interface", () => {
   it("couvrent toutes les clés utilisées par les pages", () => {
     const utilisees = [
       ...`${pageAppli}${pageIntrouvable}`.matchAll(/data-texte="([^"]+)"/g),
-      ...`${appli}${mesSuivis}${pageIntrouvable}`.matchAll(/texte\("([^"]+)"/g),
-      ...`${appli}${mesSuivis}`.matchAll(/poserTexte\(.+, "([^"]+)"\)/g),
+      ...`${appli}${mesSuivis}${filAlertes}${pageIntrouvable}`.matchAll(/texte\("([^"]+)"/g),
+      ...`${appli}${mesSuivis}${filAlertes}`.matchAll(/poserTexte\(.+, "([^"]+)"\)/g),
       // Clés écrites à part : « choix.titre », « reglages.erreur »…
-      ...`${appli}${mesSuivis}`.matchAll(/"([a-z]+(?:\.[a-zA-Z]+)+)"/g),
-      // Clés composées : une par raison de refus d'un ajout, une par type de produit.
+      ...`${appli}${mesSuivis}${filAlertes}`.matchAll(/"([a-z]+(?:\.[a-zA-Z]+)+)"/g),
+      // Clés composées : une par raison de refus d'un ajout, une par type de
+      // produit, une par événement d'une alerte.
+      ...Object.keys(EVENEMENTS).map((evenement) => [, `alertes.evenement.${evenement}`]),
       ...Object.keys(ERREURS_AJOUT)
         .filter((erreur) => erreur !== ERREURS_AJOUT.limiteAtteinte)
         .map((erreur) => [, `ajout.erreur.${erreur}`]),
@@ -97,7 +101,7 @@ describe("lirePays", () => {
 });
 
 it("chaque écran de l'appli est servi par la page principale (_redirects)", () => {
-  for (const chemin of [CHEMIN_CONNEXION, CHEMIN_REGLAGES]) {
+  for (const chemin of [CHEMIN_CONNEXION, CHEMIN_REGLAGES, CHEMIN_ALERTES]) {
     expect(redirections).toMatch(new RegExp(`^${chemin} / 200$`, "m"));
   }
 });

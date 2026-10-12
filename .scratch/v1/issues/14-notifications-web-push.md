@@ -14,3 +14,7 @@ Envoyer chaque alerte en notification Web Push sur tous les appareils où l'util
 - [ ] Un type désactivé ne crée plus d'alerte de ce type (ni notification, ni entrée dans le fil d'alertes).
 - [ ] Un abonnement expiré ou révoqué est supprimé sans faire échouer les autres envois.
 - [ ] Aucun service payant n'est utilisé (clés VAPID générées par nous).
+
+## Comments
+
+- 2026-10-12 (ticket 08) : les alertes sont créées dans `releverPaquet` (`worker/src/releve.js`), table `alertes`. Un type désactivé doit être filtré dans cette requête, pas à l'affichage.

@@ -91,9 +91,10 @@ input {
   font: inherit;
 }
 
-/* Écran Mes suivis */
+/* Écrans Mes suivis et Fil d'alertes */
 
-#ecran-accueil {
+#ecran-accueil,
+#ecran-alertes {
   width: min(640px, 100vw - 32px);
 }
 
@@ -144,14 +145,16 @@ input {
 }
 
 #liste-suivis,
-#liste-non-suivis {
+#liste-non-suivis,
+#liste-alertes {
   width: 100%;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.suivi {
+.suivi,
+.alerte {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -161,7 +164,8 @@ input {
   text-align: left;
 }
 
-.suivi a {
+.suivi a,
+.alerte a {
   flex: 1 1 200px;
   color: inherit;
   font-weight: 600;

@@ -75,3 +75,11 @@ _Avoid_: Trial, version d'essai
 **Alerte**:
 Message envoyé à un utilisateur pour signaler un événement sur un de ses produits suivis : début de promo, plus bas historique atteint, prix cible atteint, sortie ou démo disponible.
 _Avoid_: Notification (réservé au mécanisme technique d'envoi), rappel
+
+**Début de promo**:
+Passage d'un produit suivi d'un prix sans réduction (ou d'aucun prix, comme avant sa sortie) à un prix réduit, observé entre deux relevés à jour ; une réduction de lancement en est un.
+_Avoid_: Nouvelle promo, solde
+
+**Fil d'alertes**:
+Écran de l'appli qui liste les alertes d'un utilisateur, de la plus récente à la plus ancienne.
+_Avoid_: Historique, notifications, boîte de réception

@@ -3,6 +3,7 @@
 export const CHEMIN_ACCUEIL = "/";
 export const CHEMIN_CONNEXION = "/connexion";
 export const CHEMIN_REGLAGES = "/reglages";
+export const CHEMIN_ALERTES = "/alertes";
 // Adresse qui lance la connexion via Steam.
 export const CHEMIN_CONNEXION_STEAM = "/api/auth/steam";
 // Valeur du paramètre `erreur` de l'écran Connexion quand Steam a refusé la connexion.
