@@ -1,7 +1,7 @@
 # Notifications Web Push et interrupteurs par type
 
 Status: ready-for-agent
-Blocked by: 08, 13
+Blocked by: 08, 15
 
 ## Quoi
 

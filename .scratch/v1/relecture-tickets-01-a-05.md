@@ -29,7 +29,7 @@ Relecture `/code-review` du 2026-10-11, de `ff91ef6` à `c339030`. Le porteur du
 
 - Ticket 06 : provenance des suivis (liste de souhaits ou ajout manuel).
 - Ticket 07 : « Pas de prix dans votre pays » affiché aussi pour un produit gratuit ou pas encore sorti.
-- Ticket 15 : la date d'ajout des suivis (`suivis.ajoute_le`) est une donnée stockée à citer dans la page de confidentialité.
+- Ticket 17 : la date d'ajout des suivis (`suivis.ajoute_le`) est une donnée stockée à citer dans la page de confidentialité.
 
 ## Comments
 
